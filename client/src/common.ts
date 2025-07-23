@@ -6,14 +6,11 @@ const ctx = canvas.getContext('2d')!;
 let isPlaying = false;
 const noisePoints: number[] = Array.from({ length: 1000 }, () => 0);
 
-let slider_val = 10;
+let audioGainScale = 10;
 
-const slider = document.getElementById('sensitivitySlider') as HTMLInputElement;
-slider.addEventListener('input', (event: Event) => {
-    const target = event.target as HTMLInputElement;
-    slider_val = parseInt(target.value, 10);
-    console.log(slider_val)
-});
+export function setAudioGainValue(gain: number) {
+    audioGainScale = gain;
+}
 
 export function drawVolume(volume: number): void {
     if (!isPlaying) return;
@@ -40,9 +37,28 @@ export function getAudioContext(): AudioContext {
     return audioContext;
 }
 
+export function clearAudioContext() {
+    if (audioContext) {
+        audioContext.close().then(() => {
+            console.log('AudioContext closed');
+            audioContext = null;
+        });
+
+    }
+}
+
 export function calculateRMSVolume(data: Float32Array): number {
-    const sumSquares = data.reduce((sum, value) => sum + value * value, 0);
-    return Math.sqrt(sumSquares / data.length) * 100;
+    // Calculate RMS: sqrt(sum(x[i]^2) / N)
+    const gain = audioGainScale;
+    let sumSquares = 0;
+    for (let i = 0; i < data.length; i++) {
+        let amplifiedSample = data[i] * gain;
+        sumSquares += amplifiedSample * amplifiedSample;
+    }
+    let rmsVolume = Math.sqrt(sumSquares / data.length);
+
+    // Scale to 0–400 and convert to integer
+    return Math.round(rmsVolume * canvas.height);
 }
 
 export function setIsPlaying(value: boolean): void {

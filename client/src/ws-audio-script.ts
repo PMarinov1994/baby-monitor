@@ -1,4 +1,4 @@
-import { drawVolume, calculateRMSVolume, setIsPlaying, getAudioContext } from './common';
+import { drawVolume, calculateRMSVolume, setIsPlaying, getAudioContext, clearAudioContext } from './common';
 
 let ws: WebSocket | null = null;
 
@@ -53,11 +53,5 @@ export function wsStopAudio(): void {
         ws = null;
     }
 
-    const audioContext = getAudioContext();
-    if (audioContext) {
-        audioContext.close().then(() => {
-            (window as any).audioContext = null;
-            console.log('AudioContext closed');
-        });
-    }
+    clearAudioContext();
 }

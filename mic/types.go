@@ -1,8 +1,6 @@
 package mic
 
 import (
-	"log"
-
 	"github.com/linuxdeepin/go-lib/asound"
 )
 

@@ -36,7 +36,7 @@ func main() {
 	http.HandleFunc("/api", wsApiHandle)
 
 	// WebPages handler
-	http.Handle("/", http.FileServer(http.Dir("./front-end")))
+	http.Handle("/", http.FileServer(http.Dir("./client/dist/")))
 
 	log.Printf("Starting server...")
 	log.Fatal(http.ListenAndServe("0.0.0.0:8080", nil))
