@@ -6,20 +6,25 @@ body {
 	margin: 0;
 	padding: 20px;
 }
+
 canvas {
 	display: block;
 	margin: 0 auto 20px auto;
 	border: 1px solid #444;
 }
+
 button {
 	margin: 5px;
 	padding: 10px 20px;
 	font-size: 16px;
+}
+
 /* Added a bit spacing for slider */
 #sensitivitySlider {
 	margin-top: 15px;
 	width: 300px;
 }
+
 label {
 	display: block;
 	margin-top: 15px;

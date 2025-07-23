@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +8,17 @@
 	<link rel="stylesheet" href="style.css">
 	<link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
+
 <body>
-	<button onclick="wsStartAudio()">WS Start Audio</button>
-	<button onclick="wsStopAudio()">WS Stop Audio</button>
+	<button id="btnStart">WS Start Audio</button>
+	<button id="btnStop">WS Stop Audio</button>
 
 	<!-- Slider added here -->
 	<label for="sensitivitySlider">Volume Sensitivity</label>
 	<input type="range" id="sensitivitySlider" min="1" max="100" value="10" />
 
 	<canvas id="volumeCanvas" width="1000" height="400"></canvas>
-	<script src="common.js"></script>
-	<script src="ws-audio-script.js"></script>
+	<script type="module" src="/src/main.ts"></script>
 </body>
+
 </html>
