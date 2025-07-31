@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	// "atomicgo.dev/cursor"
@@ -29,7 +30,7 @@ func process_sound() {
 	do, err := portaudio.DefaultOutputDevice()
 	checkError(&err)
 
-	var hdmi_dev *portaudio.DeviceInfo
+	var rpi_code_zero *portaudio.DeviceInfo
 
 	max_name_len := 0
 	max_samplerate_len := 0
@@ -52,8 +53,8 @@ func process_sound() {
 			mark = "  <"
 		}
 
-		if d.Name == "WH-1000XM4" {
-			hdmi_dev = d
+		if strings.Contains(d.Name, "Codec Zero") {
+			rpi_code_zero = d
 		}
 
 		fmt.Printf("%s%*s | %*f | %*s | %2d | %2d\n",
@@ -70,9 +71,9 @@ func process_sound() {
 	in_stream_channels := 1
 	in_params := portaudio.StreamParameters{
 		Input: portaudio.StreamDeviceParameters{
-			Device:   di,
+			Device:   rpi_code_zero,
 			Channels: in_stream_channels,
-			Latency:  di.DefaultLowInputLatency,
+			Latency:  rpi_code_zero.DefaultLowInputLatency,
 		},
 		SampleRate:      sampleRate,
 		FramesPerBuffer: frameBuffer * in_stream_channels,
@@ -91,8 +92,8 @@ func process_sound() {
 
 	defer in_stream.Close()
 
-	if hdmi_dev == nil {
-		// panic("HDMI dev output is nil")
+	if rpi_code_zero == nil {
+		panic("Rpi-codec-zero dev output is nil")
 	}
 
 	// Output
