@@ -1,7 +1,7 @@
 let ws: WebSocket | null = null;
 
 export function wsConnect(): void {
-    ws = new WebSocket('ws://192.168.100.140:8080/api');
+    ws = new WebSocket('ws://192.168.200.109:8080/api');
 
     ws.onopen = () => {
         console.log('WebSocket connected');

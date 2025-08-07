@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
@@ -84,9 +85,9 @@ func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticSample) {
 		data := <-videoFrames.Read()
 		if writeErr := videoTrack.WriteSample(
 			media.Sample{
-				Data:     data,
-				Duration: h264FrameDuration,
-				//Timestamp: time.Now(),
+				Data:      data,
+				Duration:  h264FrameDuration,
+				Timestamp: time.Now(),
 			}); writeErr != nil {
 			checkError(&writeErr)
 		}
@@ -100,9 +101,9 @@ func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticSample) {
 
 		if writeErr := audioTrack.WriteSample(
 			media.Sample{
-				Data:     data,
-				Duration: opusFrameDuration,
-				//Timestamp: time.Now(),
+				Data:      data,
+				Duration:  opusFrameDuration,
+				Timestamp: time.Now(),
 			}); writeErr != nil {
 			checkError(&writeErr)
 		}

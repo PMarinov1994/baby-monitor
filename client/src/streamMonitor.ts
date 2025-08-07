@@ -8,9 +8,11 @@ function get_fps_average() {
 
 export function monitorFPS(video: HTMLVideoElement, label: HTMLParagraphElement) {
     function ticker(_: DOMHighResTimeStamp, metadata: VideoFrameCallbackMetadata) {
-        var media_time_diff = Math.abs(metadata.mediaTime - last_media_time);
+        const now = video.currentTime
+        var media_time_diff = Math.abs(now - last_media_time);
         var frame_num_diff = Math.abs(metadata.presentedFrames - last_frame_num);
         var diff = media_time_diff / frame_num_diff;
+
         if (
             diff &&
             diff < 1 &&
@@ -23,7 +25,7 @@ export function monitorFPS(video: HTMLVideoElement, label: HTMLParagraphElement)
             label.textContent = "FPS: " + fps + ", certainty: " + fps_rounder.length * 2 + "%";
         }
         frame_not_seeked = true;
-        last_media_time = metadata.mediaTime;
+        last_media_time = now;
         last_frame_num = metadata.presentedFrames;
         video.requestVideoFrameCallback(ticker);
     }
