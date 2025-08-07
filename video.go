@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"io"
-	"log"
 	"log/slog"
 	"os/exec"
 	"time"
