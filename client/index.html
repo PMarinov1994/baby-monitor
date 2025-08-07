@@ -10,14 +10,8 @@
 </head>
 
 <body>
-	<button id="btnStart">WS Start Audio</button>
-	<button id="btnStop">WS Stop Audio</button>
-
-	<!-- Slider added here -->
-	<label for="sensitivitySlider">Volume Sensitivity</label>
-	<input type="range" id="sensitivitySlider" min="1" max="100" value="10" />
-
-	<canvas id="volumeCanvas" width="1000" height="400"></canvas>
+	<p id="videoStats">Video stats</p>
+	<video id="remoteVideo" autoplay playsinline muted controls></video>
 	<script type="module" src="/src/main.ts"></script>
 </body>
 

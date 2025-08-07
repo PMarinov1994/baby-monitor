@@ -1,21 +1,16 @@
 package main
 
-type client struct {
-	id             int
-	audio_chain_ch *ringBuffer
+type ringBuffer[T any] struct {
+	ch chan T
 }
 
-type ringBuffer struct {
-	ch chan []float32
-}
-
-func createRingBuffer(size int) *ringBuffer {
-	return &ringBuffer{
-		ch: make(chan []float32, size),
+func createRingBuffer[T any](size int) *ringBuffer[T] {
+	return &ringBuffer[T]{
+		ch: make(chan T, size),
 	}
 }
 
-func (r *ringBuffer) Push(data []float32) {
+func (r *ringBuffer[T]) Push(data T) {
 	select {
 	case r.ch <- data:
 	default:
@@ -24,6 +19,6 @@ func (r *ringBuffer) Push(data []float32) {
 	}
 }
 
-func (r *ringBuffer) Read() <-chan []float32 {
+func (r *ringBuffer[T]) Read() <-chan T {
 	return r.ch
 }
