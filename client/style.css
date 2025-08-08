@@ -30,3 +30,26 @@ label {
 	margin-top: 15px;
 	font-weight: bold;
 }
+
+#soundSettings select,
+#soundSettings input {
+	width: 50vw;
+	box-sizing: border-box;
+	margin: 20px;
+}
+
+#soundSettings {
+	display: none;
+}
+
+#soundToggleBtn {
+	cursor: pointer;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+#remoteVideo {
+	width: 80vw;
+	border: 1px solid white;
+}
