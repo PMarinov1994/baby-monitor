@@ -13,34 +13,27 @@ func (e *MicError) Error() string {
 }
 
 type SoundCard struct {
-	ShortName      string // Card short Name
-	LongName       string // Card full name
-	MixerName      string // A more descriptive card name
-	DriverName     string // Driver name
-	OutputChannels []OutputChannel
-	cardIndex      int    // Card index when enumerated
-	cardId         string // Used for connecting to asound API
+	ShortName      string          `json:"shortName"` // Card short Name
+	LongName       string          `json:"longName"`  // Card full name
+	MixerName      string          `json:"mixerName"` // A more descriptive card name
+	DriverName     string          `json:"-"`         // Driver name
+	OutputChannels []OutputChannel `json:"outChannels"`
+	cardIndex      int             `json:"-"` // Card index when enumerated
+	cardId         string          `json:"-"` // Used for connecting to asound API
 }
 
 type OutputChannel struct {
-	selemId              uint // SelemId
-	Name                 string
-	MinVolume, MaxVolume int
-	CurVolume            []int
-	soundCard            *SoundCard
-	channels             []int
+	selemId   uint       `json:"-"` // SelemId
+	Name      string     `json:"name"`
+	MinVolume int        `json:"minVolume"`
+	MaxVolume int        `json:"maxVolume"`
+	CurVolume int        `json:"curVolume"`
+	soundCard *SoundCard `json:"-"`
+	channels  []int      `json:"-"`
 }
 
 func (ch *OutputChannel) SetVolume(volume int) (bool, error) {
-	changeNeeded := false
-	for _, v := range ch.CurVolume {
-		if v != volume {
-			changeNeeded = true
-			break
-		}
-	}
-
-	if !changeNeeded {
+	if ch.CurVolume == volume {
 		return false, nil
 	}
 

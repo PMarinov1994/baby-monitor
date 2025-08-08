@@ -197,17 +197,23 @@ func detectCard(device string) (*SoundCard, error) {
 					}
 				}
 
-				outChannel := OutputChannel{
-					selemId:   selemIndex,
-					soundCard: &soundCard,
-					Name:      selemName,
-					MinVolume: minVolume,
-					MaxVolume: maxVolume,
-					channels:  channels,
-					CurVolume: curVolume,
-				}
+				// Only add channels we can modify
+				if len(channels) != 0 && len(curVolume) != 0 {
+					outChannel := OutputChannel{
+						selemId:   selemIndex,
+						soundCard: &soundCard,
+						Name:      selemName,
+						MinVolume: minVolume,
+						MaxVolume: maxVolume,
+						channels:  channels,
+						CurVolume: curVolume[0],
+					}
 
-				outChannels = append(outChannels, outChannel)
+					outChannels = append(outChannels, outChannel)
+				} else {
+					log.Printf("Output channel '%s' from card '%s' is empty. Skipping\n",
+						selemName, soundCard.LongName)
+				}
 			}
 
 			selem = selem.Next()
