@@ -8,7 +8,7 @@ export async function connectToSender(videoEl: HTMLVideoElement) {
 
     pc.onicecandidate = async event => {
         if (event.candidate === null) {
-            console.log('SENDER OFFER', pc.localDescription?.sdp);
+            // console.log('SENDER OFFER', pc.localDescription?.sdp);
 
             const response = await fetch('/webRTCFeed', {
                 method: 'POST',
@@ -19,7 +19,7 @@ export async function connectToSender(videoEl: HTMLVideoElement) {
             });
 
             const answer = await response.json();
-            console.log('SENDER ANSWER', answer.sdp);
+            // console.log('SENDER ANSWER', answer.sdp);
 
             try {
                 await pc.setRemoteDescription(new RTCSessionDescription(answer))
@@ -28,7 +28,7 @@ export async function connectToSender(videoEl: HTMLVideoElement) {
             }
 
         } else {
-            console.log('SENDER CANDIDATE', event.candidate && event.candidate.candidate)
+            // console.log('SENDER CANDIDATE', event.candidate && event.candidate.candidate)
         }
     }
     pc.addTransceiver('video', {

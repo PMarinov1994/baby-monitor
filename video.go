@@ -98,3 +98,21 @@ func proccessVideoFeed(videoFeed io.Reader) {
 		}
 	}
 }
+
+func isVideoSourceAvailable() bool {
+	rpicam := exec.Command(
+		"rpicam-vid",
+		"--version",
+	)
+
+	if err := rpicam.Start(); err != nil {
+		return false // executable not found on $PATH
+	}
+
+	state, err := rpicam.Process.Wait()
+	if err != nil {
+		checkError(&err)
+	}
+
+	return state.ExitCode() == 0
+}

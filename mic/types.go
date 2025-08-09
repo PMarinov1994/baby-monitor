@@ -1,6 +1,8 @@
 package mic
 
 import (
+	"fmt"
+
 	"github.com/linuxdeepin/go-lib/asound"
 )
 
@@ -13,13 +15,13 @@ func (e *MicError) Error() string {
 }
 
 type SoundCard struct {
-	ShortName      string          `json:"shortName"` // Card short Name
-	LongName       string          `json:"longName"`  // Card full name
-	MixerName      string          `json:"mixerName"` // A more descriptive card name
-	DriverName     string          `json:"-"`         // Driver name
-	OutputChannels []OutputChannel `json:"outChannels"`
-	cardIndex      int             `json:"-"` // Card index when enumerated
-	cardId         string          `json:"-"` // Used for connecting to asound API
+	ShortName      string           `json:"shortName"` // Card short Name
+	LongName       string           `json:"longName"`  // Card full name
+	MixerName      string           `json:"mixerName"` // A more descriptive card name
+	DriverName     string           `json:"-"`         // Driver name
+	OutputChannels []*OutputChannel `json:"outChannels"`
+	cardIndex      int              `json:"-"` // Card index when enumerated
+	cardId         string           `json:"-"` // Used for connecting to asound API
 }
 
 type OutputChannel struct {
@@ -77,6 +79,8 @@ func (ch *OutputChannel) SetVolume(volume int) (bool, error) {
 	}()
 
 	selem := mixer.FirstElem()
+	var index uint = 0
+
 	for selem.Ptr != nil {
 
 		selemId, err := asound.NewMixerSelemId()
@@ -88,10 +92,16 @@ func (ch *OutputChannel) SetVolume(volume int) (bool, error) {
 
 		selem.GetSelemId(selemId)
 
-		if selemId.GetIndex() == ch.selemId {
+		name := selemId.GetName()
+		if index == ch.selemId && name == ch.Name {
 			wasSet := false
 			for _, elemCh := range ch.channels {
 				elemChId := asound.MixerSelemChannelId(elemCh)
+
+				if !selem.SelemHasCaptureChannel(elemChId) {
+					return false, fmt.Errorf("Invalid channel Id %d", elemCh)
+				}
+
 				curVolume, err := selem.SelemGetCaptureVolume(elemChId)
 				if err != nil {
 					return false, err
@@ -106,11 +116,15 @@ func (ch *OutputChannel) SetVolume(volume int) (bool, error) {
 					}
 				}
 
+				ch.CurVolume = volume
 				wasSet = true
 			}
 
 			return wasSet, nil
 		}
+
+		selem = selem.Next()
+		index++
 	}
 
 	return false, nil

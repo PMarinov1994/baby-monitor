@@ -1,9 +1,13 @@
 package main
 
-import "log"
+import (
+	"log"
+	"runtime/debug"
+)
 
 func checkError(err *error) {
 	if *err != nil {
-		log.Fatalf("Error: %v", *err)
+		debug.PrintStack()
+		log.Fatalf("Error: %v\n", *err)
 	}
 }

@@ -27,7 +27,7 @@ func startAudioFeed() {
 	//	arecord
 	arecord := exec.Command(
 		"arecord",
-		"-D", "hw:Zero,0",
+		// "-D", "hw:Zero,0", // TODO: handle the rpi sound card?
 		"-c", fmt.Sprint(channels),
 		"-r", fmt.Sprint(outSampleRate),
 		"-f", "S16_LE",

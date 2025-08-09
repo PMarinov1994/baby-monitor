@@ -152,7 +152,8 @@ func detectCard(device string) (*SoundCard, error) {
 		}
 	}()
 
-	outChannels := make([]OutputChannel, 0)
+	outChannels := make([]*OutputChannel, 0)
+	var index uint = 0
 	selem := mixer.FirstElem()
 	for selem.Ptr != nil {
 
@@ -174,7 +175,6 @@ func detectCard(device string) (*SoundCard, error) {
 					(!selem.SelemHasCommonSwitch() && selem.SelemHasCommonVolume())) {
 
 				selemName := selemId.GetName()
-				selemIndex := selemId.GetIndex()
 
 				minVolume, maxVolume := selem.SelemGetCaptureVolumeRange()
 
@@ -200,7 +200,7 @@ func detectCard(device string) (*SoundCard, error) {
 				// Only add channels we can modify
 				if len(channels) != 0 && len(curVolume) != 0 {
 					outChannel := OutputChannel{
-						selemId:   selemIndex,
+						selemId:   index,
 						soundCard: &soundCard,
 						Name:      selemName,
 						MinVolume: minVolume,
@@ -209,7 +209,7 @@ func detectCard(device string) (*SoundCard, error) {
 						CurVolume: curVolume[0],
 					}
 
-					outChannels = append(outChannels, outChannel)
+					outChannels = append(outChannels, &outChannel)
 				} else {
 					log.Printf("Output channel '%s' from card '%s' is empty. Skipping\n",
 						selemName, soundCard.LongName)
@@ -217,6 +217,7 @@ func detectCard(device string) (*SoundCard, error) {
 			}
 
 			selem = selem.Next()
+			index++
 		}()
 	}
 
