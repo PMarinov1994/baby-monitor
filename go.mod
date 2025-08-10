@@ -31,6 +31,7 @@ require (
 )
 
 require (
+	github.com/mattetti/audio v0.0.0-20240411020228-c5379f9b5b61
 	github.com/pion/webrtc/v4 v4.1.3
 	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
 )

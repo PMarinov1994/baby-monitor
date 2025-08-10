@@ -19,6 +19,8 @@ github.com/linuxdeepin/go-gir v0.0.0-20230331033513-a8d7a9e89f9b/go.mod h1:a0tox
 github.com/linuxdeepin/go-lib v0.0.0-20250715130109-a4b5968b93a3 h1:l/Ox2uBQ+bkAstz1cUuI8XosxhEJ3F8rlCYJj5JaOXs=
 github.com/linuxdeepin/go-lib v0.0.0-20250715130109-a4b5968b93a3/go.mod h1:yNoMFao1mE45M8zW6i83eaGpT9eriCWsXEdcVNQswpw=
 github.com/linuxdeepin/go-x11-client v0.0.0-20220830090948-78fe92b727bb/go.mod h1:KwpmRZ47A/0a2l9V0V6aTlkuNaqy5j1fOqMFJONuIMY=
+github.com/mattetti/audio v0.0.0-20240411020228-c5379f9b5b61 h1:db1I7R9KTRARpVXhyd4+cGecxutdJbpx11Gun98GP7U=
+github.com/mattetti/audio v0.0.0-20240411020228-c5379f9b5b61/go.mod h1:LlQmBGkOuV/SKzEDXBPKauvN2UqCgzXO2XjecTGj40s=
 github.com/mozillazg/go-pinyin v0.19.0/go.mod h1:iR4EnMMRXkfpFVV5FMi4FNB6wGq9NV6uDWbUuPhP4Yc=
 github.com/pion/datachannel v1.5.10 h1:ly0Q26K1i6ZkGf42W7D4hQYR90pZwzFOjTq5AuCKk4o=
 github.com/pion/datachannel v1.5.10/go.mod h1:p/jJfC9arb29W7WrxyKbepTU20CFgyx5oLo8Rs4Py/M=
