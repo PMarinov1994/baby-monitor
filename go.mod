@@ -8,7 +8,6 @@ require (
 )
 
 require (
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/pion/datachannel v1.5.10 // indirect
 	github.com/pion/dtls/v3 v3.0.6 // indirect
 	github.com/pion/ice/v4 v4.0.10 // indirect
@@ -31,7 +30,7 @@ require (
 )
 
 require (
-	github.com/mattetti/audio v0.0.0-20240411020228-c5379f9b5b61
+	github.com/google/uuid v1.6.0
 	github.com/pion/webrtc/v4 v4.1.3
 	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
 )

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"log"
 	"log/slog"
 	"os/exec"
 	"time"
@@ -46,8 +47,8 @@ func startVideoFeed() {
 		checkError(&err)
 	}
 
-	err = cmd.Start()
-	if err != nil {
+	log.Printf("starting: %s\n", cmd.String())
+	if err := cmd.Start(); err != nil {
 		checkError(&err)
 	}
 
