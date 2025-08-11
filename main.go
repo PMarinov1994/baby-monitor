@@ -28,6 +28,10 @@ func main() {
 	videoFrames = createRingBuffer[[]byte](1)
 	audioFrames = createRingBuffer[[]byte](1)
 
+	// NOTE: Create tracks before starting media,
+	//       otherwize no video feed is present
+	videoTrack, audioTrack = createMediaEngine()
+
 	if isVideoSourceAvailable() {
 		log.Printf("Starting video feed.\n")
 		go startVideoFeed()
@@ -36,8 +40,6 @@ func main() {
 	}
 
 	go startAudioFeed()
-
-	videoTrack, audioTrack = createMediaEngine()
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)
