@@ -10,20 +10,23 @@
 </head>
 
 <body>
-	<button id="soundToggleBtn">≡</button>
-	<div id="soundSettings">
-		<div>
-			<select name="Sound Card" id="soundCards">
-			</select>
-			<select name="Outputs" id="outputs">
-			</select>
-		</div>
-		<div>
+	<button id="soundSettingsOpenBtn">≡</button>
+	<div id="soundSettings" class="soundSettingsStyle">
+		<a id="soundSettingsCloseBtn" href="javascript:void(0)" class="closebtn">&times;</a>
+		<div class="soundSettings-content">
+			<select name="Sound Card" id="soundCards"> </select>
+			<select name="Outputs" id="outputs"> </select>
 			<input type="range" min="0" max="0" value="0" class="slider" id="volume">
 		</div>
+		<div>
+		</div>
 	</div>
-	<p id="videoStats">Video stats</p>
-	<video id="remoteVideo" autoplay playsinline muted controls></video>
+	<div class="video-container" id="videoContainer">
+		<video id="remoteVideo" autoplay playsinline muted controls></video>
+		<div class="vidStatsOverlay">
+			<p id="videoStats">Video stats</p>
+		</div>
+	</div>
 	<script type="module" src="/src/main.ts"></script>
 </body>
 

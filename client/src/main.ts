@@ -5,16 +5,17 @@ import { wsConnect } from "./webSocket";
 const videoElem = document.getElementById('remoteVideo') as HTMLVideoElement;
 const videoStat = document.getElementById('videoStats') as HTMLParagraphElement;
 
-const soundSettingsBtn = document.getElementById('soundToggleBtn') as HTMLButtonElement;
+const soundSettingsOpenBtn = document.getElementById('soundSettingsOpenBtn') as HTMLButtonElement;
+const soundSettingsCloseBtn = document.getElementById('soundSettingsCloseBtn') as HTMLButtonElement;
 const soundSettingsDiv = document.getElementById('soundSettings') as HTMLDivElement;
 
-
-soundSettingsBtn.addEventListener('click', () => {
-    if (soundSettingsDiv.style.display === 'none')
-        soundSettingsDiv.style.display = 'block';
-    else
-        soundSettingsDiv.style.display = 'none';
+soundSettingsOpenBtn.addEventListener('click', () => {
+    soundSettingsDiv.style.height = "100%"
 });
+
+soundSettingsCloseBtn.addEventListener('click', () => {
+    soundSettingsDiv.style.height = "0%"
+})
 
 window.addEventListener('DOMContentLoaded', () => {
     connectToSender(videoElem).then(() => {
@@ -23,3 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
     wsConnect();
 });
+
+videoElem.addEventListener("fullscreenchange", () => {
+
+})
