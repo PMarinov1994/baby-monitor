@@ -22,8 +22,8 @@ func main() {
 		checkError(&err)
 	}
 
-	log.Printf("Found %d sound cards", len(soundCards))
 	soundCards = sc
+	log.Printf("Found %d sound cards", len(soundCards))
 
 	videoFrames = createRingBuffer[[]byte](1)
 	audioFrames = createRingBuffer[[]byte](1)
