@@ -12,20 +12,28 @@ import (
 
 	"github.com/pion/mediadevices/pkg/codec"
 	"github.com/pion/mediadevices/pkg/codec/mmal"
+	"github.com/pion/mediadevices/pkg/codec/openh264"
 	"github.com/pion/mediadevices/pkg/frame"
 	"github.com/pion/mediadevices/pkg/prop"
 )
 
 const (
-	h264FrameDuration = time.Millisecond * 20 // 50 FPS
-	// h264FrameDuration = time.Millisecond * 33 // 30 FPS
+	// h264FrameDuration = time.Millisecond * 20 // 50 FPS
+	h264FrameDuration = time.Millisecond * 33 // 30 FPS
 
 	readBufferSize = 4096
 	bufferSizeKB   = 256
 
-	width     = 1920
-	height    = 1080
-	targetFPS = 50
+	// FullHD
+	// width     = 1920
+	// height    = 1080
+
+	// HD
+	width  = 1280
+	height = 720
+
+	targetFPS = 30
+	// targetFPS = 50
 )
 
 var (
@@ -125,13 +133,9 @@ func startVideoFeed() {
 
 	defer cmd.Process.Kill()
 
-	params, err := mmal.NewParams()
-	if err != nil {
-		checkError(&err)
-	}
+	var encoder codec.ReadCloser
 
 	reader := newYUVReader(stdout, width, height)
-
 	mediaProps := prop.Media{
 		Video: prop.Video{
 			Width:       width,
@@ -141,9 +145,44 @@ func startVideoFeed() {
 		},
 	}
 
-	encoder, err := params.BuildVideoEncoder(reader, mediaProps)
-	if err != nil {
-		checkError(&err)
+	if true { // TODO: Check based on encoding (hardware vs software)
+		params, err := mmal.NewParams()
+		if err != nil {
+			checkError(&err)
+		}
+
+		params.BitRate = 5_000_000
+		params.KeyFrameInterval = 30
+
+		encoder, err = params.BuildVideoEncoder(reader, mediaProps)
+		if err != nil {
+			checkError(&err)
+		}
+	} else {
+		params, err := openh264.NewParams()
+
+		if err != nil {
+
+			checkError(&err)
+
+		}
+
+		params.UsageType = openh264.CameraVideoRealTime
+		params.RCMode = openh264.RCOffMode
+		params.BitRate = 0 // unlimited for quality mode
+		// params.IntraPeriod = targetFPS
+		params.EnableFrameSkip = true
+		params.IntraPeriod = 30
+		params.SliceNum = 1          // Defaults to single NAL unit mode
+		params.MultipleThreadIdc = 8 // TODO:
+		params.MaxNalSize = 0
+		params.SliceMode = openh264.SMFixedslcnumSlice
+		params.SliceSizeConstraint = 12800 * 5
+
+		encoder, err = params.BuildVideoEncoder(reader, mediaProps)
+		if err != nil {
+			checkError(&err)
+		}
 	}
 
 	defer encoder.Close()
