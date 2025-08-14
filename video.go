@@ -33,20 +33,24 @@ var (
 )
 
 type streamYUVReader struct {
-	reader                   io.Reader
-	width, height, frameSize int
-	buf                      []byte
+	reader                io.Reader
+	width, height         int
+	frameSize             int
+	halfWidth, halfHeight int
+	buf                   []byte
 }
 
 func newYUVReader(reader io.Reader, w, h int) *streamYUVReader {
 	// NOTE: same as 'w*h + 2*(w/2)*(h/2)'
 	sz := w * h * 3 / 2
 	return &streamYUVReader{
-		reader:    reader,
-		width:     w,
-		height:    h,
-		frameSize: sz,
-		buf:       make([]byte, sz),
+		reader:     reader,
+		width:      w,
+		halfWidth:  w / 2,
+		height:     h,
+		halfHeight: h / 2,
+		frameSize:  sz,
+		buf:        make([]byte, sz),
 	}
 }
 
@@ -57,14 +61,29 @@ func (reader *streamYUVReader) Read() (image.Image, func(), error) {
 	}
 
 	yLen := reader.width * reader.height
-	uLen := yLen / 4
+	uLen := reader.halfWidth * reader.halfHeight // uLen := yLen / 4
+
+	if false { // TODO: test after fixing encoding
+		centerX := width / 2
+		centerY := height / 2
+		for y := centerY - 3; y <= centerY+3; y++ {
+			for x := centerX - 3; x <= centerX+3; x++ {
+				setPixelYUV420(&reader.buf,
+					x, y,
+					reader.width,
+					reader.height,
+					reader.halfWidth,
+					reader.halfHeight)
+			}
+		}
+	}
 
 	img := &image.YCbCr{
 		Y:              reader.buf[:yLen],
 		Cb:             reader.buf[yLen : yLen+uLen],
 		Cr:             reader.buf[yLen+uLen:],
 		YStride:        reader.width,
-		CStride:        reader.width / 2,
+		CStride:        reader.halfWidth,
 		SubsampleRatio: image.YCbCrSubsampleRatio420,
 		Rect:           image.Rect(0, 0, reader.width, reader.height),
 	}
@@ -202,4 +221,27 @@ func isVideoSourceAvailable() bool {
 	}
 
 	return state.ExitCode() == 0
+}
+
+// SetPixelYUV420 sets the pixel at (x, y) to black in a YUV420 planar buffer.
+// The frame is modified in-place through the pointer to the byte slice.
+func setPixelYUV420(frame *[]byte, x, y, width, hight, hwidth, hhight int) {
+	if x < 0 || x >= width || y < 0 || y >= height {
+		return // out of bounds
+	}
+
+	yPlaneSize := width * height
+	uvPlaneSize := (hwidth) * (hhight)
+
+	buf := *frame
+
+	// Set Y (luma) to black
+	yIndex := y*width + x
+	buf[yIndex] = 0
+
+	// Set U and V (chroma) to neutral (128)
+	uIndex := yPlaneSize + (y/2)*(width/2) + (x / 2)
+	vIndex := yPlaneSize + uvPlaneSize + (y/2)*(hwidth) + (x / 2)
+	buf[uIndex] = 128
+	buf[vIndex] = 128
 }
