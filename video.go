@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/pion/mediadevices/pkg/codec"
-	"github.com/pion/mediadevices/pkg/codec/openh264"
+	"github.com/pion/mediadevices/pkg/codec/mmal"
 	"github.com/pion/mediadevices/pkg/frame"
 	"github.com/pion/mediadevices/pkg/prop"
 )
@@ -125,22 +125,10 @@ func startVideoFeed() {
 
 	defer cmd.Process.Kill()
 
-	params, err := openh264.NewParams()
+	params, err := mmal.NewParams()
 	if err != nil {
 		checkError(&err)
 	}
-
-	params.UsageType = openh264.CameraVideoRealTime
-	params.RCMode = openh264.RCOffMode
-	params.BitRate = 0 // unlimited for quality mode
-	// params.IntraPeriod = targetFPS
-	params.EnableFrameSkip = true
-	params.IntraPeriod = 30
-	params.SliceNum = 1          // Defaults to single NAL unit mode
-	params.MultipleThreadIdc = 8 // TODO:
-	params.MaxNalSize = 0
-	params.SliceMode = openh264.SMFixedslcnumSlice
-	params.SliceSizeConstraint = 12800 * 5
 
 	reader := newYUVReader(stdout, width, height)
 
