@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/pion/mediadevices/pkg/codec"
-	"github.com/pion/mediadevices/pkg/codec/mmal"
+	// "github.com/pion/mediadevices/pkg/codec/mmal"
 	"github.com/pion/mediadevices/pkg/codec/openh264"
 	"github.com/pion/mediadevices/pkg/frame"
 	"github.com/pion/mediadevices/pkg/prop"
@@ -145,19 +145,19 @@ func startVideoFeed() {
 		},
 	}
 
-	if true { // TODO: Check based on encoding (hardware vs software)
-		params, err := mmal.NewParams()
-		if err != nil {
-			checkError(&err)
-		}
-
-		params.BitRate = 5_000_000
-		params.KeyFrameInterval = 30
-
-		encoder, err = params.BuildVideoEncoder(reader, mediaProps)
-		if err != nil {
-			checkError(&err)
-		}
+	if false { // TODO: Check based on encoding (hardware vs software)
+		// params, err := mmal.NewParams()
+		// if err != nil {
+		// 	checkError(&err)
+		// }
+		//
+		// params.BitRate = 5_000_000
+		// params.KeyFrameInterval = 30
+		//
+		// encoder, err = params.BuildVideoEncoder(reader, mediaProps)
+		// if err != nil {
+		// 	checkError(&err)
+		// }
 	} else {
 		params, err := openh264.NewParams()
 
@@ -168,15 +168,15 @@ func startVideoFeed() {
 		}
 
 		params.UsageType = openh264.CameraVideoRealTime
-		params.RCMode = openh264.RCOffMode
-		params.BitRate = 0 // unlimited for quality mode
+		params.RCMode = openh264.RCBitrateMode
+		params.BitRate = 5_000_000
 		// params.IntraPeriod = targetFPS
 		params.EnableFrameSkip = true
 		params.IntraPeriod = 30
-		params.SliceNum = 1          // Defaults to single NAL unit mode
-		params.MultipleThreadIdc = 8 // TODO:
+		params.MultipleThreadIdc = 1 // TODO:
 		params.MaxNalSize = 0
-		params.SliceMode = openh264.SMFixedslcnumSlice
+		params.SliceNum = 1 // Defaults to single NAL unit mode
+		params.SliceMode = openh264.SMSizelimitedSlice
 		params.SliceSizeConstraint = 12800 * 5
 
 		encoder, err = params.BuildVideoEncoder(reader, mediaProps)
