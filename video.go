@@ -3,18 +3,13 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"image"
 	"io"
 	"log"
-	"log/slog"
+	"os"
 	"os/exec"
 	"time"
 
-	"github.com/pion/mediadevices/pkg/codec"
-	// "github.com/pion/mediadevices/pkg/codec/mmal"
-	"github.com/pion/mediadevices/pkg/codec/openh264"
-	"github.com/pion/mediadevices/pkg/frame"
-	"github.com/pion/mediadevices/pkg/prop"
+	"github.com/pmarinov1994/go4vl/v4l2"
 )
 
 const (
@@ -62,14 +57,11 @@ func newYUVReader(reader io.Reader, w, h int) *streamYUVReader {
 	}
 }
 
-func (reader *streamYUVReader) Read() (image.Image, func(), error) {
+func (reader *streamYUVReader) Read() ([]byte, error) {
 	_, err := io.ReadFull(reader.reader, reader.buf)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	yLen := reader.width * reader.height
-	uLen := reader.halfWidth * reader.halfHeight // uLen := yLen / 4
 
 	if false { // TODO: test after fixing encoding
 		centerX := width / 2
@@ -86,17 +78,7 @@ func (reader *streamYUVReader) Read() (image.Image, func(), error) {
 		}
 	}
 
-	img := &image.YCbCr{
-		Y:              reader.buf[:yLen],
-		Cb:             reader.buf[yLen : yLen+uLen],
-		Cr:             reader.buf[yLen+uLen:],
-		YStride:        reader.width,
-		CStride:        reader.halfWidth,
-		SubsampleRatio: image.YCbCrSubsampleRatio420,
-		Rect:           image.Rect(0, 0, reader.width, reader.height),
-	}
-
-	return img, func() {}, nil
+	return reader.buf, nil
 }
 
 func startVideoFeed() {
@@ -113,12 +95,10 @@ func startVideoFeed() {
 		"--low-latency",
 		"--flush",
 		"-t", "0",
-		"--inline",
 		"--width", fmt.Sprint(width),
 		"--height", fmt.Sprint(height),
 		"--framerate", fmt.Sprint(targetFPS),
 		"--codec", "yuv420",
-		// "--framerate", "30",
 		"-o", "-")
 
 	stdout, err := cmd.StdoutPipe()
@@ -133,79 +113,165 @@ func startVideoFeed() {
 
 	defer cmd.Process.Kill()
 
-	var encoder codec.ReadCloser
+	camReader := newYUVReader(stdout, width, height)
 
-	reader := newYUVReader(stdout, width, height)
-	mediaProps := prop.Media{
-		Video: prop.Video{
-			Width:       width,
-			Height:      height,
-			FrameRate:   float32(targetFPS),
-			FrameFormat: frame.FormatI420,
+	fd, err := v4l2.OpenDevice("/dev/video11", os.O_RDWR, 0)
+	if err != nil {
+		checkError(&err)
+	}
+
+	defer v4l2.CloseDevice(fd)
+
+	logCtrlInfo(fd)
+
+	// NOTE: This is important for live streams, since clients can join at any time,
+	//       and we need to let them know about the h264 SPS/PPS (sequence) parameters
+	if err := v4l2.SetControlValue(fd, v4l2.CtrlMpegRepeatSeqHeader, 1); err != nil {
+		checkError(&err)
+	}
+
+	outFmMplane, err := v4l2.GetPixFormatMPlane(fd, v4l2.BufTypeVideoOutputMPlane)
+	if err != nil {
+		checkError(&err)
+	}
+
+	outFmMplane.Width = width
+	outFmMplane.Height = height
+	outFmMplane.PixelFormat = v4l2.PixelFmtYUV410
+
+	if err := v4l2.SetPixFormatMPlane(fd, outFmMplane, v4l2.BufTypeVideoOutputMPlane); err != nil {
+		checkError(&err)
+	}
+
+	capFmMplane, err := v4l2.GetPixFormatMPlane(fd, v4l2.BufTypeVideoCaptureMPlane)
+	if err != nil {
+		checkError(&err)
+	}
+
+	capFmMplane.Width = width
+	capFmMplane.Height = height
+
+	if err := v4l2.SetPixFormatMPlane(fd, capFmMplane, v4l2.BufTypeVideoCaptureMPlane); err != nil {
+		checkError(&err)
+	}
+
+	streamParam := v4l2.StreamParam{
+		Type: v4l2.BufTypeVideoOutputMPlane,
+		Output: v4l2.OutputParam{
+			TimePerFrame: v4l2.Fract{
+				Numerator:   1,
+				Denominator: 30,
+			},
 		},
 	}
 
-	if false { // TODO: Check based on encoding (hardware vs software)
-		// params, err := mmal.NewParams()
-		// if err != nil {
-		// 	checkError(&err)
-		// }
-		//
-		// params.BitRate = 5_000_000
-		// params.KeyFrameInterval = 30
-		//
-		// encoder, err = params.BuildVideoEncoder(reader, mediaProps)
-		// if err != nil {
-		// 	checkError(&err)
-		// }
-	} else {
-		params, err := openh264.NewParams()
+	if err := v4l2.SetStreamParam(fd, v4l2.BufTypeVideoOutputMPlane, streamParam); err != nil {
+		checkError(&err)
+	}
 
-		if err != nil {
+	outputDev := StreamingDevice{
+		fd:      fd,
+		bufType: v4l2.BufTypeVideoOutputMPlane,
+		ioType:  v4l2.IOTypeMMAP,
+		count:   1,
+	}
 
+	outReqBuf, err := v4l2.InitBuffers(outputDev) // VIDIOC_REQBUFS
+	if err != nil {
+		checkError(&err)
+	}
+
+	outputDev.output = make(chan []byte, outReqBuf.Count)
+	outputDev.buffers, err = v4l2.MapMemoryBuffers(outputDev) // mmap
+	if err != nil {
+		checkError(&err)
+	}
+
+	capDev := StreamingDevice{
+		fd:      fd,
+		bufType: v4l2.BufTypeVideoCaptureMPlane,
+		ioType:  v4l2.IOTypeMMAP,
+		count:   1,
+	}
+
+	capReqBuf, err := v4l2.InitBuffers(capDev) // VIDIOC_REQBUFS
+	if err != nil {
+		checkError(&err)
+	}
+
+	capDev.output = make(chan []byte, capReqBuf.Count)
+	capDev.buffers, err = v4l2.MapMemoryBuffers(capDev) // mmap
+	if err != nil {
+		checkError(&err)
+	}
+
+	if _, err := v4l2.QueueBuffer(outputDev, 0, 0); err != nil { // VIDIOC_QBUF
+		checkError(&err)
+	}
+
+	if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
+		checkError(&err)
+	}
+
+	if err := v4l2.StreamOn(outputDev); err != nil { // VIDIOC_STREAMON
+		checkError(&err)
+	}
+
+	defer v4l2.StreamOff(outputDev)
+
+	if err := v4l2.StreamOn(capDev); err != nil { // VIDIOC_STREAMON
+		checkError(&err)
+	}
+
+	defer v4l2.StreamOff(capDev)
+
+	defer func() {
+		log.Printf("Closing stuf")
+	}()
+
+	// TODO: To low of a value and no frames are visible
+	outCh := createRingBuffer[[]byte](512)
+
+	go proccessVideoFeed(outCh)
+	for {
+
+		if _, err := v4l2.DequeueBuffer(outputDev); err != nil { // VIDIOC_DQBUF
 			checkError(&err)
-
 		}
 
-		params.UsageType = openh264.CameraVideoRealTime
-		params.RCMode = openh264.RCBitrateMode
-		params.BitRate = 5_000_000
-		// params.IntraPeriod = targetFPS
-		params.EnableFrameSkip = true
-		params.IntraPeriod = 30
-		params.MultipleThreadIdc = 1 // TODO:
-		params.MaxNalSize = 0
-		params.SliceNum = 1 // Defaults to single NAL unit mode
-		params.SliceMode = openh264.SMSizelimitedSlice
-		params.SliceSizeConstraint = 12800 * 5
-
-		encoder, err = params.BuildVideoEncoder(reader, mediaProps)
+		frame, err := camReader.Read()
 		if err != nil {
+			checkError(&err)
+		}
+
+		copy(outputDev.buffers[0], frame)
+		if _, err := v4l2.QueueBuffer(outputDev, 0, uint32(len(frame))); err != nil { // VIDIOC_QBUF
+			checkError(&err)
+		}
+
+		encodedBuf, err := v4l2.DequeueBuffer(capDev) // VIDIOC_DQBUF
+		if err != nil {
+			checkError(&err)
+		}
+
+		encodedFrame := make([]byte, encodedBuf.Info.Planes[0].BytesUsed)
+		copy(encodedFrame, capDev.buffers[0][:encodedBuf.Info.Planes[0].BytesUsed])
+		outCh.Push(encodedFrame)
+
+		if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
 			checkError(&err)
 		}
 	}
-
-	defer encoder.Close()
-
-	proccessVideoFeed(encoder)
 }
 
 // NOTE: from https://github.com/bezineb5/go-h264-streamer/blob/main/stream/streaming.go
-func proccessVideoFeed(videoFeed codec.ReadCloser) {
+func proccessVideoFeed(videoFeed *ringBuffer[[]byte]) {
 	nalBuf := make([]byte, bufferSizeKB*1024)
 	currentPos := 0
 	NALlen := len(nalSeparator)
 
 	for {
-		inBuf, _, err := videoFeed.Read()
-		if err != nil {
-			if err == io.EOF {
-				slog.Debug("startCamera: EOF", slog.String("command", "rpicam-vid"))
-				return
-			}
-			slog.Error("startCamera: Error reading from camera; ignoring", slog.Any("error", err))
-			continue
-		}
+		inBuf := <-videoFeed.Read()
 
 		copied := copy(nalBuf[currentPos:], inBuf)
 		startPosSearch := currentPos - NALlen
@@ -252,7 +318,7 @@ func isVideoSourceAvailable() bool {
 
 // SetPixelYUV420 sets the pixel at (x, y) to black in a YUV420 planar buffer.
 // The frame is modified in-place through the pointer to the byte slice.
-func setPixelYUV420(frame *[]byte, x, y, width, hight, hwidth, hhight int) {
+func setPixelYUV420(frame *[]byte, x, y, width, height, hwidth, hhight int) {
 	if x < 0 || x >= width || y < 0 || y >= height {
 		return // out of bounds
 	}
@@ -271,4 +337,26 @@ func setPixelYUV420(frame *[]byte, x, y, width, hight, hwidth, hhight int) {
 	vIndex := yPlaneSize + uvPlaneSize + (y/2)*(hwidth) + (x / 2)
 	buf[uIndex] = 128
 	buf[vIndex] = 128
+}
+
+func logCtrlInfo(fd uintptr) {
+	// ctrls, err := v4l2.QueryAllControls(fd)
+	// if err != nil {
+	// 	checkError(&err)
+	// }
+	//
+	// log.Println("-> Controls")
+	// for _, ctrl := range ctrls {
+	// 	log.Printf("--> %#v\n", ctrl)
+	// }
+
+	extCtrls, err := v4l2.QueryAllExtControls(fd)
+	if err != nil {
+		checkError(&err)
+	}
+
+	log.Println("-> ExtControls")
+	for _, ctrl := range extCtrls {
+		log.Printf("--> %#v\n", ctrl)
+	}
 }

@@ -81,7 +81,7 @@ volumeSlider.addEventListener('change', () => {
     const channel = card.outChannels[channelndex]
 
     const value = parseInt(volumeSlider.value, 10)
-    console.log(`${card.shortName} - ${channel.name} -> ${value}`)
+    // console.log(`${card.shortName} - ${channel.name} -> ${value}`)
 
     if (ws === null)
         return
@@ -102,19 +102,19 @@ export function wsConnect(): void {
     ws = new WebSocket(`ws://${loc.host}/api`);
 
     ws.onopen = () => {
-        console.log('WebSocket connected');
+        // console.log('WebSocket connected');
         ws?.send(REQ_SOUND_CARDS)
     };
 
     ws.onmessage = (event: MessageEvent) => {
-        console.log('WebSocket message:', event.data);
+        // console.log('WebSocket message:', event.data);
         const response: string = event.data as string
 
         const parts = response.split(DATA_SEPARATOR)
         switch (parts[0]) {
             case RES_SOUND_CARDS:
                 soundCards = JSON.parse(parts[1])
-                console.log(soundCards)
+                // console.log(soundCards)
 
                 soundCards.forEach((card, index) => {
                     const opt = document.createElement('option')

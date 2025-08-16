@@ -1,0 +1,63 @@
+// package main
+//
+// import (
+// 	"bytes"
+// 	"encoding/binary"
+// 	"io"
+//
+// 	"github.com/peterhagelund/go-v4l2/v4l2"
+// 	"golang.org/x/sys/unix"
+// )
+//
+// type Encoder2 interface {
+// 	io.Closer
+// 	StreamOn() error
+// 	StreamOff() error
+// 	GrabFrame() ([]byte, error)
+// }
+//
+// func CreateEncoder2() (*Encoder2, error) {
+// 	fd, err := unix.Open("/dev/video11", unix.O_RDWR, 0)
+// 	if err != nil {
+// 		checkError(&err)
+// 	}
+//
+// 	defer func() {
+// 		if err != nil {
+// 			unix.Close(fd)
+// 		}
+// 	}()
+//
+// 	fm, err := v4l2.GetFormat(fd, v4l2.BufTypeVideOutputMPlane)
+// 	if err != nil {
+// 		checkError(&err)
+// 	}
+//
+// 	var mp v4l2.PixFormatMPlane
+// 	binary.Read(bytes.NewBuffer(fm.RawData[:]), binary.NativeEndian, &mp)
+//
+// 	mp.Width = width
+// 	mp.Height = height
+// 	mp.PixFormat = v4l2.PixFmtYUV420
+// 	_, _, err = v4l2.SetFormat(fd, fm.Type, mp.PixFormat, mp.Width, mp.Height)
+// 	if err != nil {
+// 		checkError(&err)
+// 	}
+//
+// 	fm, err = v4l2.GetFormat(fd, v4l2.BufTypeVideCaptureMPlane)
+// 	if err != nil {
+// 		checkError(&err)
+// 	}
+//
+// 	binary.Read(bytes.NewBuffer(fm.RawData[:]), binary.NativeEndian, &mp)
+//
+// 	mp.Width = width
+// 	mp.Height = height
+//
+// 	_, _, err = v4l2.SetFormat(fd, v4l2.BufTypeVideCaptureMPlane, mp.PixFormat, mp.Width, mp.Height)
+// 	if err != nil {
+// 		checkError(&err)
+// 	}
+//
+// 	return nil, nil
+// }

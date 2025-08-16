@@ -30,7 +30,10 @@ func main() {
 
 	// NOTE: Create tracks before starting media,
 	//       otherwize no video feed is present
-	videoTrack, audioTrack = createMediaEngine()
+	createMediaEngine()
+
+	go fillVideoTrack(videoTrack)
+	// go fillAudioTrack(audioTrack)
 
 	if isVideoSourceAvailable() {
 		log.Printf("Starting video feed.\n")
@@ -39,7 +42,7 @@ func main() {
 		log.Printf("No video feed. Not running on Raspberry Pi.\n")
 	}
 
-	go startAudioFeed()
+	// go startAudioFeed()
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)
