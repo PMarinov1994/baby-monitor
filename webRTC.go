@@ -123,43 +123,39 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
-	var canditateJson webrtc.ICECandidateInit
-	done := make(chan struct{})
+	var canditates []webrtc.ICECandidateInit
+	iceGatherDone := make(chan struct{})
 	peerConnection.OnICECandidate(func(candidate *webrtc.ICECandidate) {
-		log.Printf("OnICECandidate")
 		if candidate != nil {
-			canditateJson = candidate.ToJSON() // TODO: check formats or something
+			canditates = append(canditates, candidate.ToJSON()) // TODO: check formats or something
 		} else {
-			close(done)
+			close(iceGatherDone)
 		}
 	})
 
 	// Set the remote SessionDescription
-	log.Printf("SetRemoteDescription")
 	if err = peerConnection.SetRemoteDescription(clientOffer); err != nil {
 		checkError(&err)
 	}
 
 	// Create answer
-	log.Printf("CreateAnswer")
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
 		checkError(&err)
 	}
 
 	// Sets the LocalDescription, and starts our UDP listeners
-	log.Printf("SetLocalDescription")
+	// This will trigger the ICE Candidate gathering
 	if err = peerConnection.SetLocalDescription(answer); err != nil {
 		checkError(&err)
 	}
 
-	<-done
+	<-iceGatherDone
 
-	log.Printf("Send anwser to server")
 	response := map[string]any{
-		"sdp":       answer.SDP,
-		"type":      "answer",
-		"candidate": canditateJson,
+		"sdp":        answer.SDP,
+		"type":       "answer",
+		"candidates": canditates,
 	}
 
 	msg, err := json.Marshal(response)

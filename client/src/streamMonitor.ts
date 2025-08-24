@@ -1,5 +1,7 @@
+const SIZE = 50
+
 let last_media_time: number, last_frame_num: number, fps: number;
-let fps_rounder: number[] = [];
+let fps_rounder: number[] = new Array(SIZE).fill(0)
 let frame_not_seeked = true;
 
 function get_fps_average() {
@@ -17,12 +19,13 @@ export function monitorFPS(video: HTMLVideoElement, label: HTMLParagraphElement)
             diff &&
             diff < 1 &&
             frame_not_seeked &&
-            fps_rounder.length < 50 &&
             video.playbackRate === 1
         ) {
+            fps_rounder.shift()
             fps_rounder.push(diff);
+
             fps = Math.round(1 / get_fps_average());
-            label.textContent = "FPS: " + fps + ", certainty: " + fps_rounder.length * 2 + "%";
+            label.textContent = "FPS: " + fps;
         }
         frame_not_seeked = true;
         last_media_time = now;

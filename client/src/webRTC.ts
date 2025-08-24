@@ -62,7 +62,8 @@ export async function connectToSender(videoEl: HTMLVideoElement) {
                 sdp: answer.sdp
             }));
 
-        await pc.addIceCandidate(new RTCIceCandidate(answer.candidate));
+        for (const candidate of answer.candidates)
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
 
     } catch (e) {
         alert(e)
