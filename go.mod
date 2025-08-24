@@ -32,6 +32,8 @@ require (
 require (
 	github.com/google/uuid v1.6.0
 	github.com/pion/webrtc/v4 v4.1.3
-	github.com/pmarinov1994/go4vl v0.0.0-20250822225000-1f75588ec27b
+	github.com/vladimirvivien/go4vl v0.0.5
 	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
 )
+
+replace github.com/vladimirvivien/go4vl => github.com/pmarinov1994/go4vl v0.0.0-20250824131812-9bae8213f6d8

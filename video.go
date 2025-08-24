@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/pmarinov1994/go4vl/v4l2"
+	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
 const (
