@@ -12,6 +12,7 @@ export async function connectToSender(videoEl: HTMLVideoElement) {
         }
     }
 
+    pc.addTransceiver('audio', { direction: 'recvonly' })
     const videoTransceiver = pc.addTransceiver('video', { direction: 'recvonly' })
 
     const videoCapabilities = RTCRtpReceiver.getCapabilities("video")
@@ -24,8 +25,6 @@ export async function connectToSender(videoEl: HTMLVideoElement) {
     const preferred = codecs.filter(c => c.mimeType === "video/H264")
 
     videoTransceiver.setCodecPreferences(preferred);
-
-    // pc.addTransceiver('audio', { direction: 'recvonly' })
 
     try {
         const offer = await pc.createOffer()

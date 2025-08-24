@@ -89,15 +89,39 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Add this newly created track to the PeerConnection
-	_, err = peerConnection.AddTrack(videoTrack)
+	rtpVideoSender, err := peerConnection.AddTrack(videoTrack)
 	if err != nil {
 		checkError(&err)
 	}
 
-	// _, err = peerConnection.AddTrack(audioTrack)
-	// if err != nil {
-	// 	checkError(&err)
-	// }
+	// Read incoming RTCP packets
+	// Before these packets are returned they are processed by interceptors. For things
+	// like NACK this needs to be called.
+	go func() {
+		rtcpBuf := make([]byte, 1500)
+		for {
+			if _, _, rtcpErr := rtpVideoSender.Read(rtcpBuf); rtcpErr != nil {
+				return
+			}
+		}
+	}()
+
+	rtpAudioSender, err := peerConnection.AddTrack(audioTrack)
+	if err != nil {
+		checkError(&err)
+	}
+
+	// Read incoming RTCP packets
+	// Before these packets are returned they are processed by interceptors. For things
+	// like NACK this needs to be called.
+	go func() {
+		rtcpBuf := make([]byte, 1500)
+		for {
+			if _, _, rtcpErr := rtpAudioSender.Read(rtcpBuf); rtcpErr != nil {
+				return
+			}
+		}
+	}()
 
 	var canditateJson webrtc.ICECandidateInit
 	done := make(chan struct{})

@@ -17,7 +17,7 @@ sudo ln -s /lib/systemd/system/getty@.service getty@ttyGS0.service
 - rpicam-apps
 
 ```
-sudo apt update && sudo apt upgrade -y && sudo apt install -y libasound2-dev libopus-dev libopusfile-dev rpicam-apps 
+sudo apt update && sudo apt upgrade -y && sudo apt install -y libasound2-dev libopus-dev libopusfile-dev rpicam-apps
 ```
 
 ### Setup Codec Zero
@@ -52,6 +52,13 @@ pcm.!default {
         type hw
         card Zero
 }
+```
+
+## Configure /boot/firmware/config.txt
+- Raspberry Pi Camera
+```
+camera_auto_detect=0
+dtoverlay=imx477
 ```
 
 ## Development dependencies
