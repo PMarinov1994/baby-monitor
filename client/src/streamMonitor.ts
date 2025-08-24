@@ -1,4 +1,4 @@
-const SIZE = 50
+const SIZE = 6
 
 let last_media_time: number, last_frame_num: number, fps: number;
 let fps_rounder: number[] = new Array(SIZE).fill(0)
