@@ -28,10 +28,6 @@ const (
 	RES_CHANGE_SOUND = "gotSound"
 )
 
-var (
-	clients []*WsClient
-)
-
 func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 	wsUpdater := websocket.Upgrader{}
 
@@ -52,9 +48,9 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		log.Printf("[WebSocket] Cleaning client with id %s\n", client.id.String())
 		client.ws.Close()
-		for i, c := range clients {
+		for i, c := range wsClients {
 			if c.id == client.id {
-				clients[i] = nil
+				wsClients[i] = nil
 				break
 			}
 		}
@@ -64,16 +60,19 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 
 	// Add the client to a free slot
 	added := false
-	for i := range clients {
-		if clients[i] == nil {
-			clients[i] = &client
+	for i := range wsClients {
+		if wsClients[i] == nil {
+			wsClients[i] = &client
 			added = true
 			break
 		}
 	}
 
 	if !added {
-		clients = append(clients, &client)
+		if err := ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil, "No client spots left")); err != nil {
+			checkError(&err)
+		}
+		return
 	}
 
 	log.Printf("[WebSocket] Added client with id %s\n", client.id.String())
@@ -131,12 +130,12 @@ func processGetSoundCardsReq(ws *websocket.Conn) {
 
 func processVolumeChangeReq(chunks []string, ws *websocket.Conn) {
 	if len(chunks) < 4 {
-		ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(
+		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
 			"%s%sError: invalid request for '%s'. Not enough data chunks",
 			RES_CHANGE_SOUND,
 			DATA_SEPARATOR,
 			REQ_CHANGE_SOUND,
-		)))
+		))
 		return
 	}
 

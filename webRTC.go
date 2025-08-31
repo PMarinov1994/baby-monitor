@@ -72,6 +72,12 @@ func createMediaEngine() {
 
 func handleConnection(res http.ResponseWriter, req *http.Request) {
 	log.Println("CONNECT REQUEST")
+
+	if connectedClients >= MAX_CONNECTED_CLIENT {
+		http.Error(res, "No connection spots left", 500)
+		return
+	}
+
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		checkError(&err)
@@ -130,6 +136,21 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 			canditates = append(canditates, candidate.ToJSON()) // TODO: check formats or something
 		} else {
 			close(iceGatherDone)
+		}
+	})
+
+	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+		switch state {
+		case webrtc.PeerConnectionStateClosed:
+			// PeerConnection was explicitly closed. This usually happens from a DTLS CloseNotify
+			connectedClients--
+			log.Println("Peer Connection has gone to closed. Closing connection.")
+			if err := peerConnection.Close(); err != nil {
+				checkError(&err)
+			}
+		case webrtc.PeerConnectionStateConnected:
+			connectedClients++
+			log.Println("Peer Connection connected")
 		}
 	})
 

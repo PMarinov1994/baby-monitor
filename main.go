@@ -7,11 +7,19 @@ import (
 	"githug.com/pmarinov1994/baby-monitor/mic"
 )
 
+const (
+	MAX_CONNECTED_CLIENT = 5
+)
+
 var (
+	connectedClients uint8
+
 	soundCards []*mic.SoundCard
 
 	videoFrames *ringBuffer[[]byte]
 	audioFrames *ringBuffer[[]byte]
+
+	wsClients []*WsClient
 )
 
 func main() {
@@ -27,6 +35,8 @@ func main() {
 
 	videoFrames = createRingBuffer[[]byte](1)
 	audioFrames = createRingBuffer[[]byte](1)
+
+	wsClients = make([]*WsClient, MAX_CONNECTED_CLIENT)
 
 	// NOTE: Create tracks before starting media,
 	//       otherwize no video feed is present
