@@ -37,6 +37,7 @@ func main() {
 	audioFrames = createRingBuffer[[]byte](1)
 
 	wsClients = make([]*WsClient, MAX_CONNECTED_CLIENT)
+	connectedClients = 0
 
 	// NOTE: Create tracks before starting media,
 	//       otherwize no video feed is present
@@ -58,7 +59,7 @@ func main() {
 	http.HandleFunc("/webRTCFeed", handleConnection)
 	http.Handle("/", http.FileServer(http.Dir("./client/dist")))
 
-	log.Printf("Web Server Ready!\n")
+	log.Printf("======= Web Server Ready! =======\n")
 	if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
 		log.Fatal(err)
 	}
