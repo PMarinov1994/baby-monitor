@@ -49,12 +49,10 @@ func main() {
 
 	go startAudioFeed()
 
-	select {
-	case <-chAudioRdy:
-		log.Printf("Audio Ready!")
-	case <-chVideoRdy:
-		log.Printf("Video Ready!")
-	}
+	<-chAudioRdy
+	log.Printf("Audio Ready!")
+	<-chVideoRdy
+	log.Printf("Video Ready!")
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)
