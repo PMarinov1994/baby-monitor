@@ -33,6 +33,8 @@ const (
 
 var (
 	nalSeparator = []byte{0, 0, 0, 1} //NAL break
+
+	chVideoRdy = make(chan struct{})
 )
 
 type streamYUVReader struct {
@@ -232,6 +234,7 @@ func startVideoFeed() {
 	// TODO: To low of a value and no frames are visible
 	outCh := createRingBuffer[[]byte](512)
 
+	close(chVideoRdy)
 	go proccessVideoFeed(outCh)
 	for {
 

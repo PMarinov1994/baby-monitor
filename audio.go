@@ -20,6 +20,10 @@ const (
 	frameSize  = 960 // 20 ms at 48kHz
 )
 
+var (
+	chAudioRdy = make(chan struct{})
+)
+
 func startAudioFeed() {
 	// arecord -D hw:Zero,0 -c 2 -r 44100 -f S16_LE | ffmpeg -f s16le -ac 2 -ar 44100 -i - -ar 48000 -f s16le -
 	//	arecord
@@ -54,6 +58,7 @@ func startAudioFeed() {
 	pcmBytes := make([]byte, len(pcm)*4)       // raw PCM bytes (4 bytes per sample)
 	packet := make([]byte, 4000)               // encoded packet buffer
 
+	close(chAudioRdy)
 	for {
 		// Read exactly one frame worth of PCM
 		if _, err := io.ReadFull(stdout, pcmBytes); err != nil {

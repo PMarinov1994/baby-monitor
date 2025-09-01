@@ -12,14 +12,14 @@ const (
 )
 
 var (
-	connectedClients uint8
+	connectedClients uint8 = 0
+
+	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
+	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
+
+	wsClients []*WsClient = make([]*WsClient, MAX_CONNECTED_CLIENT)
 
 	soundCards []*mic.SoundCard
-
-	videoFrames *ringBuffer[[]byte]
-	audioFrames *ringBuffer[[]byte]
-
-	wsClients []*WsClient
 )
 
 func main() {
@@ -32,12 +32,6 @@ func main() {
 
 	soundCards = sc
 	log.Printf("Found %d sound cards", len(soundCards))
-
-	videoFrames = createRingBuffer[[]byte](1)
-	audioFrames = createRingBuffer[[]byte](1)
-
-	wsClients = make([]*WsClient, MAX_CONNECTED_CLIENT)
-	connectedClients = 0
 
 	// NOTE: Create tracks before starting media,
 	//       otherwize no video feed is present
@@ -54,6 +48,13 @@ func main() {
 	}
 
 	go startAudioFeed()
+
+	select {
+	case <-chAudioRdy:
+		log.Printf("Audio Ready!")
+	case <-chVideoRdy:
+		log.Printf("Video Ready!")
+	}
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)
