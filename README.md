@@ -119,3 +119,10 @@ params.KeyFrameInterval = 30
 |----------  |----------   |----------     |
 | 1280x720   | 30    | 28      |
 | 1920x1080  | 18    | N/A     |
+
+### Explore hardware encoders/decoders capabilities
+
+List device capabilities
+```
+v4l2-ctl --all --device /dev/video*
+```
