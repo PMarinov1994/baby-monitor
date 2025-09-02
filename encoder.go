@@ -7,6 +7,13 @@ import (
 	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
+const (
+	H264_MINIMUM_QP_VALUE = 0x00990A61
+	H264_MAXIMUM_QP_VALUE = 0x00990A62
+	H264_I_FRAME_PERIOD   = 0x00990A66
+	H264_PROFILE          = 0x00990A6B
+)
+
 type Encoder struct {
 	rawFrameCh     chan []byte
 	encodedFrameCh chan []byte
