@@ -13,9 +13,6 @@ import (
 )
 
 const (
-	// h264FrameDuration = time.Millisecond * 20 // 50 FPS
-	h264FrameDuration = time.Millisecond * 33 // 30 FPS
-
 	readBufferSize = 4096
 	bufferSizeKB   = 256
 
@@ -27,8 +24,12 @@ const (
 	width  = 1280
 	height = 720
 
-	targetFPS = 30
+	targetFPS = 24
 	// targetFPS = 50
+
+	// h264FrameDuration = time.Millisecond * 20 // 50 FPS
+	// h264FrameDuration = time.Millisecond * 33 // 30 FPS
+	h264FrameDuration = time.Duration(time.Second / targetFPS)
 )
 
 var (
@@ -269,10 +270,10 @@ func startVideoFeed() {
 	}()
 
 	// TODO: To low of a value and no frames are visible
-	outCh := createRingBuffer[[]byte](1)
+	// outCh := createRingBuffer[[]byte](1)
 
 	close(chVideoRdy)
-	go proccessVideoFeed(outCh)
+	// go proccessVideoFeed(outCh)
 	for {
 
 		if _, err := v4l2.DequeueBuffer(outputDev); err != nil { // VIDIOC_DQBUF
@@ -296,7 +297,8 @@ func startVideoFeed() {
 
 		encodedFrame := make([]byte, encodedBuf.Info.Planes[0].BytesUsed)
 		copy(encodedFrame, capDev.buffers[0][:encodedBuf.Info.Planes[0].BytesUsed])
-		outCh.Push(encodedFrame)
+		// outCh.Push(encodedFrame)
+		videoFrames.Push(encodedFrame)
 
 		if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
 			checkError(&err)
