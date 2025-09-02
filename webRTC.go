@@ -144,12 +144,14 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 		case webrtc.PeerConnectionStateClosed:
 			// PeerConnection was explicitly closed. This usually happens from a DTLS CloseNotify
 			connectedClients--
+			log.Printf("connectedClients val: %d\n", connectedClients)
 			log.Println("Peer Connection has gone to closed. Closing connection.")
 			if err := peerConnection.Close(); err != nil {
 				checkError(&err)
 			}
 		case webrtc.PeerConnectionStateConnected:
 			connectedClients++
+			log.Printf("connectedClients val: %d\n", connectedClients)
 			log.Println("Peer Connection connected")
 		}
 	})

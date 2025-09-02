@@ -134,30 +134,30 @@ func startVideoFeed() {
 		checkError(&err)
 	}
 
-	// for ~1s GOP at 30fps; balances latency and efficiency
-	if err := v4l2.SetControlValue(fd, v4l2.CtrlMPEGVideoGOPSize, 30); err != nil {
-		checkError(&err)
-	}
+	// // for ~1s GOP at 30fps; balances latency and efficiency
+	// if err := v4l2.SetControlValue(fd, v4l2.CtrlMPEGVideoGOPSize, 30); err != nil {
+	// 	checkError(&err)
+	// }
 
-	// Max bitrate
-	if err := v4l2.SetControlValue(fd, v4l2.CtrlMPEGVideoBitrate, 25000000); err != nil {
-		checkError(&err)
-	}
+	// // Max bitrate
+	// if err := v4l2.SetControlValue(fd, v4l2.CtrlMPEGVideoBitrate, 25000000); err != nil {
+	// 	checkError(&err)
+	// }
 
-	// lowest possible for max quality
-	if err := v4l2.SetControlValue(fd, H264_MINIMUM_QP_VALUE, 0); err != nil {
-		checkError(&err)
-	}
+	// // lowest possible for max quality
+	// if err := v4l2.SetControlValue(fd, H264_MINIMUM_QP_VALUE, 0); err != nil {
+	// 	checkError(&err)
+	// }
 
-	// caps compression; ensures high quality even in motion-heavy scenes
-	if err := v4l2.SetControlValue(fd, H264_MAXIMUM_QP_VALUE, 20); err != nil {
-		checkError(&err)
-	}
+	// // caps compression; ensures high quality even in motion-heavy scenes
+	// if err := v4l2.SetControlValue(fd, H264_MAXIMUM_QP_VALUE, 20); err != nil {
+	// 	checkError(&err)
+	// }
 
-	// Set to 30 (sync with GOP size for consistency)
-	if err := v4l2.SetControlValue(fd, H264_I_FRAME_PERIOD, 30); err != nil {
-		checkError(&err)
-	}
+	// // Set to 30 (sync with GOP size for consistency)
+	// if err := v4l2.SetControlValue(fd, H264_I_FRAME_PERIOD, 30); err != nil {
+	// 	checkError(&err)
+	// }
 
 	// NOTE: This does not seem to work if != 4
 
