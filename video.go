@@ -159,11 +159,13 @@ func startVideoFeed() {
 		checkError(&err)
 	}
 
+	// NOTE: This does not seem to work if != 4
+
 	// Set to 0 (Baseline) for minimal hardware effort and lowest latency—avoids complex tools,
 	// widely supported on mobiles.
-	if err := v4l2.SetControlValue(fd, H264_PROFILE, 0); err != nil {
-		checkError(&err)
-	}
+	// if err := v4l2.SetControlValue(fd, H264_PROFILE, 0); err != nil {
+	// 	checkError(&err)
+	// }
 
 	// End of encoder config
 
@@ -267,7 +269,7 @@ func startVideoFeed() {
 	}()
 
 	// TODO: To low of a value and no frames are visible
-	outCh := createRingBuffer[[]byte](512)
+	outCh := createRingBuffer[[]byte](1)
 
 	close(chVideoRdy)
 	go proccessVideoFeed(outCh)
