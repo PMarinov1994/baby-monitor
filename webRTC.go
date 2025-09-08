@@ -104,7 +104,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	// Before these packets are returned they are processed by interceptors. For things
 	// like NACK this needs to be called.
 	go func() {
-		rtcpBuf := make([]byte, 1500)
+		rtcpBuf := make([]byte, 32)
 		for {
 			if _, _, rtcpErr := rtpVideoSender.Read(rtcpBuf); rtcpErr != nil {
 				return
@@ -121,7 +121,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	// Before these packets are returned they are processed by interceptors. For things
 	// like NACK this needs to be called.
 	go func() {
-		rtcpBuf := make([]byte, 1500)
+		rtcpBuf := make([]byte, 32)
 		for {
 			if _, _, rtcpErr := rtpAudioSender.Read(rtcpBuf); rtcpErr != nil {
 				return
