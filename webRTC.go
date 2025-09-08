@@ -6,13 +6,19 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/pion/interceptor"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
-	"github.com/pion/webrtc/v4/pkg/media"
+)
+
+const (
+	h264PayloadType = 105
+	h264ClockRate   = 90000
+
+	opusPayloadType = 111
+	opusClockRate   = 48000
 )
 
 var (
@@ -21,7 +27,7 @@ var (
 	config = webrtc.Configuration{}
 
 	videoTrack *webrtc.TrackLocalStaticRTP
-	audioTrack *webrtc.TrackLocalStaticSample
+	audioTrack *webrtc.TrackLocalStaticRTP
 )
 
 func createMediaEngine() {
@@ -33,9 +39,9 @@ func createMediaEngine() {
 	if err := mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
 		RTPCodecCapability: webrtc.RTPCodecCapability{
 			MimeType:  webrtc.MimeTypeH264,
-			ClockRate: 90000,
+			ClockRate: h264ClockRate,
 		},
-		PayloadType: 105,
+		PayloadType: h264PayloadType,
 	}, webrtc.RTPCodecTypeVideo); err != nil {
 		checkError(&err)
 	}
@@ -43,10 +49,10 @@ func createMediaEngine() {
 	if err := mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
 		RTPCodecCapability: webrtc.RTPCodecCapability{
 			MimeType:  webrtc.MimeTypeOpus,
-			ClockRate: 48000,
+			ClockRate: opusClockRate,
 			Channels:  2,
 		},
-		PayloadType: 111,
+		PayloadType: opusPayloadType,
 	}, webrtc.RTPCodecTypeAudio); err != nil {
 		panic(err)
 	}
@@ -64,13 +70,13 @@ func createMediaEngine() {
 	// Create Track that we send video back to browser on
 	vt, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
 		MimeType:  webrtc.MimeTypeH264,
-		ClockRate: 90000,
+		ClockRate: h264ClockRate,
 	}, "video", "pion")
 	if err != nil {
 		checkError(&err)
 	}
 
-	at, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{
+	at, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
 		MimeType: webrtc.MimeTypeOpus,
 	}, "audio", "pion")
 	if err != nil {
@@ -212,11 +218,11 @@ func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticRTP) {
 	// Create a packetizer for H.264
 	packetizer := rtp.NewPacketizer(
 		1200,                     // MTU
-		105,                      // Payload type (dynamic, adjust as needed)
+		h264PayloadType,          // Payload type (dynamic, adjust as needed)
 		12345,                    // SSRC
 		&codecs.H264Payloader{},  // Payloader for H.264
 		rtp.NewRandomSequencer(), // Sequencer for RTP sequence numbers
-		90000,                    // Clock rate for H.264
+		h264ClockRate,            // Clock rate for H.264
 	)
 
 	for {
@@ -231,17 +237,25 @@ func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticRTP) {
 	}
 }
 
-func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticSample) {
+func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticRTP) {
+	// Create a packetizer for Opus
+	packetizer := rtp.NewPacketizer(
+		1200,                     // MTU
+		opusPayloadType,          // Payload type (dynamic, adjust as needed)
+		12345,                    // SSRC
+		&codecs.OpusPayloader{},  // Payloader for Opus
+		rtp.NewRandomSequencer(), // Sequencer for RTP sequence numbers
+		opusClockRate,            // Clock rate for Opus
+	)
+
 	for {
 
 		data := <-audioFrames.Read()
-		if writeErr := audioTrack.WriteSample(
-			media.Sample{
-				Data:      data,
-				Duration:  opusFrameDuration,
-				Timestamp: time.Now(),
-			}); writeErr != nil {
-			checkError(&writeErr)
+		rtpPackets := packetizer.Packetize(data, 960)
+		for _, packet := range rtpPackets {
+			if err := audioTrack.WriteRTP(packet); err != nil {
+				checkError(&err)
+			}
 		}
 	}
 }
