@@ -12,7 +12,8 @@ export async function connectToSender(videoEl: HTMLVideoElement) {
         }
     }
 
-    pc.addTransceiver('audio', { direction: 'recvonly' })
+    const audioTRansceiver = pc.addTransceiver('audio', { direction: 'recvonly' })
+    audioTRansceiver.receiver.jitterBufferTarget = 1
 
     const videoTransceiver = pc.addTransceiver('video', { direction: 'recvonly' })
     videoTransceiver.receiver.jitterBufferTarget = 1

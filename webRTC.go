@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -242,7 +243,7 @@ func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticRTP) {
 	packetizer := rtp.NewPacketizer(
 		1200,                     // MTU
 		opusPayloadType,          // Payload type (dynamic, adjust as needed)
-		12345,                    // SSRC
+		54321,                    // SSRC
 		&codecs.OpusPayloader{},  // Payloader for Opus
 		rtp.NewFixedSequencer(0), // Sequencer for RTP sequence numbers
 		opusClockRate,            // Clock rate for Opus
