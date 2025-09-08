@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -97,6 +96,7 @@ func startVideoFeed() {
 		"rpicam-vid",
 		"--low-latency",
 		"--flush",
+		"--info-text", "%fps",
 		"-t", "0",
 		"--width", fmt.Sprint(width),
 		"--height", fmt.Sprint(height),
@@ -269,11 +269,7 @@ func startVideoFeed() {
 		log.Printf("Closing stuf")
 	}()
 
-	// TODO: To low of a value and no frames are visible
-	// outCh := createRingBuffer[[]byte](1)
-
 	close(chVideoRdy)
-	// go proccessVideoFeed(outCh)
 	for {
 
 		if _, err := v4l2.DequeueBuffer(outputDev); err != nil { // VIDIOC_DQBUF
@@ -297,45 +293,10 @@ func startVideoFeed() {
 
 		encodedFrame := make([]byte, encodedBuf.Info.Planes[0].BytesUsed)
 		copy(encodedFrame, capDev.buffers[0][:encodedBuf.Info.Planes[0].BytesUsed])
-		// outCh.Push(encodedFrame)
 		videoFrames.Push(encodedFrame)
 
 		if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
 			checkError(&err)
-		}
-	}
-}
-
-// NOTE: from https://github.com/bezineb5/go-h264-streamer/blob/main/stream/streaming.go
-func proccessVideoFeed(videoFeed *ringBuffer[[]byte]) {
-	nalBuf := make([]byte, bufferSizeKB*1024)
-	currentPos := 0
-	NALlen := len(nalSeparator)
-
-	for {
-		inBuf := <-videoFeed.Read()
-
-		copied := copy(nalBuf[currentPos:], inBuf)
-		startPosSearch := currentPos - NALlen
-		endPos := currentPos + copied
-
-		if startPosSearch < 0 {
-			startPosSearch = 0
-		}
-		nalIndex := bytes.Index(nalBuf[startPosSearch:endPos], nalSeparator)
-
-		currentPos = endPos
-		if nalIndex > 0 {
-			nalIndex += startPosSearch
-
-			// Boadcast before the NAL
-			broadcast := make([]byte, nalIndex)
-			copy(broadcast, nalBuf)
-			videoFrames.Push(broadcast)
-
-			// Shift
-			copy(nalBuf, nalBuf[nalIndex:currentPos])
-			currentPos = currentPos - nalIndex
 		}
 	}
 }
