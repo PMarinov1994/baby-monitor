@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/pion/interceptor"
+	"github.com/pion/rtp"
+	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
 )
 
@@ -213,21 +215,47 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 }
 
 func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticRTP) {
+	// Create a packetizer for H.264
+	packetizer := rtp.NewPacketizer(
+		1200,                     // MTU
+		h264PayloadType,          // Payload type (dynamic, adjust as needed)
+		12345,                    // SSRC
+		&codecs.H264Payloader{},  // Payloader for H.264
+		rtp.NewFixedSequencer(0), // Sequencer for RTP sequence numbers
+		h264ClockRate,            // Clock rate for H.264
+	)
+
 	for {
 
 		data := <-videoFrames.Read()
-		if _, err := videoTrack.Write(data); err != nil {
-			checkError(&err)
+		rtpPackets := packetizer.Packetize(data, 3600)
+		for _, packet := range rtpPackets {
+			if err := videoTrack.WriteRTP(packet); err != nil {
+				checkError(&err)
+			}
 		}
 	}
 }
 
 func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticRTP) {
+	// Create a packetizer for Opus
+	packetizer := rtp.NewPacketizer(
+		1200,                     // MTU
+		opusPayloadType,          // Payload type (dynamic, adjust as needed)
+		12345,                    // SSRC
+		&codecs.OpusPayloader{},  // Payloader for Opus
+		rtp.NewFixedSequencer(0), // Sequencer for RTP sequence numbers
+		opusClockRate,            // Clock rate for Opus
+	)
+
 	for {
 
 		data := <-audioFrames.Read()
-		if _, err := audioTrack.Write(data); err != nil {
-			checkError(&err)
+		rtpPackets := packetizer.Packetize(data, 960)
+		for _, packet := range rtpPackets {
+			if err := audioTrack.WriteRTP(packet); err != nil {
+				checkError(&err)
+			}
 		}
 	}
 }
