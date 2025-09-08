@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pion/interceptor"
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
 )
@@ -23,7 +24,7 @@ var (
 
 func createMediaEngine() {
 	// Create a MediaEngine object to configure the supported codec
-	mediaEngine := webrtc.MediaEngine{}
+	mediaEngine := &webrtc.MediaEngine{}
 
 	// Setup the codecs you want to use.
 	// We'll use a VP8 and Opus but you can also define your own
@@ -48,8 +49,15 @@ func createMediaEngine() {
 		panic(err)
 	}
 
+	interceptorRegistry := &interceptor.Registry{}
+	if err := webrtc.RegisterDefaultInterceptors(mediaEngine, interceptorRegistry); err != nil {
+		checkError(&err)
+	}
+
 	// Create the API object with the MediaEngine
-	api = webrtc.NewAPI(webrtc.WithMediaEngine(&mediaEngine))
+	api = webrtc.NewAPI(
+		webrtc.WithMediaEngine(mediaEngine),
+		webrtc.WithInterceptorRegistry(interceptorRegistry))
 
 	// Create Track that we send video back to browser on
 	vt, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{

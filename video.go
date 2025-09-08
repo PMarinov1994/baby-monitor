@@ -28,7 +28,8 @@ const (
 
 	// h264FrameDuration = time.Millisecond * 20 // 50 FPS
 	// h264FrameDuration = time.Millisecond * 33 // 30 FPS
-	h264FrameDuration = time.Duration(time.Second / targetFPS)
+	// h264FrameDuration = time.Duration(time.Second / targetFPS)
+	h264FrameDuration = time.Duration(time.Second / 120)
 )
 
 var (
