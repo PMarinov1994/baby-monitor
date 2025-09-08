@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/pion/interceptor"
+	"github.com/pion/rtp"
+	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
 )
@@ -18,7 +20,7 @@ var (
 
 	config = webrtc.Configuration{}
 
-	videoTrack *webrtc.TrackLocalStaticSample
+	videoTrack *webrtc.TrackLocalStaticRTP
 	audioTrack *webrtc.TrackLocalStaticSample
 )
 
@@ -60,8 +62,9 @@ func createMediaEngine() {
 		webrtc.WithInterceptorRegistry(interceptorRegistry))
 
 	// Create Track that we send video back to browser on
-	vt, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{
-		MimeType: webrtc.MimeTypeH264,
+	vt, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{
+		MimeType:  webrtc.MimeTypeH264,
+		ClockRate: 90000,
 	}, "video", "pion")
 	if err != nil {
 		checkError(&err)
@@ -205,17 +208,25 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticSample) {
+func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticRTP) {
+	// Create a packetizer for H.264
+	packetizer := rtp.NewPacketizer(
+		1200,                     // MTU
+		105,                      // Payload type (dynamic, adjust as needed)
+		12345,                    // SSRC
+		&codecs.H264Payloader{},  // Payloader for H.264
+		rtp.NewRandomSequencer(), // Sequencer for RTP sequence numbers
+		90000,                    // Clock rate for H.264
+	)
+
 	for {
 
 		data := <-videoFrames.Read()
-		if writeErr := videoTrack.WriteSample(
-			media.Sample{
-				Data:      data,
-				Duration:  h264FrameDuration,
-				Timestamp: time.Now(),
-			}); writeErr != nil {
-			checkError(&writeErr)
+		rtpPackets := packetizer.Packetize(data, 3600)
+		for _, packet := range rtpPackets {
+			if err := videoTrack.WriteRTP(packet); err != nil {
+				checkError(&err)
+			}
 		}
 	}
 }
