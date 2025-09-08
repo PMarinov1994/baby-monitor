@@ -94,9 +94,8 @@ func startVideoFeed() {
 	// cmd := exec.Command("rpicam-vid", "--low-latency", "-t", "0", "--inline", "--width", "1920", "--height", "1080", "--framerate", "30", "-o", "-")
 	cmd := exec.Command(
 		"rpicam-vid",
-		"--low-latency",
+		"--nopreview",
 		"--flush",
-		"--info-text", "%fps",
 		"-t", "0",
 		"--width", fmt.Sprint(width),
 		"--height", fmt.Sprint(height),
