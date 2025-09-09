@@ -15,9 +15,10 @@ import (
 const (
 	sampleRate = 48000
 	channels   = 2
-	frameSize  = 960 // 20 ms at 48kHz
+	// frameSize  = 960 // 20 ms at 48kHz
+	frameSize = sampleRate * 40 / 1000 // 20 ms at 48kHz
 
-	opusFrameDuration = time.Millisecond * 20
+	opusFrameDuration = time.Millisecond * 40
 )
 
 var (

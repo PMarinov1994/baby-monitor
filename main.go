@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/pion/rtp"
 	"githug.com/pmarinov1994/baby-monitor/mic"
 )
 
@@ -15,11 +14,8 @@ const (
 var (
 	connectedClients uint8 = 0
 
-	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
-	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
-
-	videoPackets *ringBuffer[*rtp.Packet] = createRingBuffer[*rtp.Packet](128)
-	audioPackets *ringBuffer[*rtp.Packet] = createRingBuffer[*rtp.Packet](256)
+	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](128)
+	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](256)
 
 	wsClients []*WsClient = make([]*WsClient, MAX_CONNECTED_CLIENT)
 
@@ -55,10 +51,10 @@ func main() {
 	<-chVideoRdy
 	log.Printf("Video Ready!")
 
-	go fillVideoTrack()
-	go fillAudioTrack()
+	// go fillVideoTrack(videoTrack)
+	// go fillAudioTrack(audioTrack)
 
-	go sendPackets(videoTrack, audioTrack)
+	go fillBoth(videoTrack, audioTrack)
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)
