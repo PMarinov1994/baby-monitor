@@ -221,54 +221,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func fillBoth(videoTrack *webrtc.TrackLocalStaticRTP, audioTrack *webrtc.TrackLocalStaticRTP) {
-	// Create a packetizer for H.264
-	videoPacketizer := rtp.NewPacketizer(
-		1200,                     // MTU
-		h264PayloadType,          // Payload type (dynamic, adjust as needed)
-		12345,                    // SSRC
-		&codecs.H264Payloader{},  // Payloader for H.264
-		rtp.NewFixedSequencer(0), // Sequencer for RTP sequence numbers
-		h264ClockRate,            // Clock rate for H.264
-	)
-
-	// Create a packetizer for Opus
-	audioPacketizer := rtp.NewPacketizer(
-		1200,                     // MTU
-		opusPayloadType,          // Payload type (dynamic, adjust as needed)
-		54321,                    // SSRC
-		&codecs.OpusPayloader{},  // Payloader for Opus
-		rtp.NewFixedSequencer(0), // Sequencer for RTP sequence numbers
-		opusClockRate,            // Clock rate for Opus
-	)
-
-	var audioPackets []*rtp.Packet
-	for {
-		for range 2 {
-			audioData := <-audioFrames.Read()
-			audioRtpPackets := audioPacketizer.Packetize(audioData, 960)
-			for _, p := range audioRtpPackets {
-				audioPackets = append(audioPackets, p)
-			}
-		}
-
-		for _, packet := range audioPackets {
-			if err := audioTrack.WriteRTP(packet); err != nil {
-				checkError(&err)
-			}
-		}
-
-		videoData := <-videoFrames.Read()
-		videoRtpPackets := videoPacketizer.Packetize(videoData, 3600)
-		for _, packet := range videoRtpPackets {
-			if err := videoTrack.WriteRTP(packet); err != nil {
-				checkError(&err)
-			}
-		}
-	}
-}
-
-func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticRTP) {
+func fillVideoTrack() {
 	// Create a packetizer for H.264
 	packetizer := rtp.NewPacketizer(
 		1200,                     // MTU
@@ -283,19 +236,17 @@ func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticRTP) {
 		data := <-videoFrames.Read()
 		rtpPackets := packetizer.Packetize(data, 3600)
 		for _, packet := range rtpPackets {
-			if err := videoTrack.WriteRTP(packet); err != nil {
-				checkError(&err)
-			}
+			videoPackets.Push(packet)
 		}
 	}
 }
 
-func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticRTP) {
+func fillAudioTrack() {
 	// Create a packetizer for Opus
 	packetizer := rtp.NewPacketizer(
 		1200,                     // MTU
 		opusPayloadType,          // Payload type (dynamic, adjust as needed)
-		54321,                    // SSRC
+		12345,                    // SSRC
 		&codecs.OpusPayloader{},  // Payloader for Opus
 		rtp.NewFixedSequencer(0), // Sequencer for RTP sequence numbers
 		opusClockRate,            // Clock rate for Opus
@@ -305,9 +256,22 @@ func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticRTP) {
 		data := <-audioFrames.Read()
 		rtpPackets := packetizer.Packetize(data, 960)
 		for _, packet := range rtpPackets {
-			if err := audioTrack.WriteRTP(packet); err != nil {
-				checkError(&err)
-			}
+			audioPackets.Push(packet)
+		}
+	}
+}
+
+func sendPackets(videoTrack *webrtc.TrackLocalStaticRTP, audioTrack *webrtc.TrackLocalStaticRTP) {
+	for {
+		videoPacket := <-videoPackets.Read()
+		audioPacket := <-audioPackets.Read()
+
+		if err := videoTrack.WriteRTP(videoPacket); err != nil {
+			checkError(&err)
+		}
+
+		if err := audioTrack.WriteRTP(audioPacket); err != nil {
+			checkError(&err)
 		}
 	}
 }
