@@ -23,18 +23,12 @@ const (
 	width  = 1280
 	height = 720
 
-	targetFPS = 24
-	// targetFPS = 50
+	targetFPS = 25
 
-	// h264FrameDuration = time.Millisecond * 20 // 50 FPS
-	// h264FrameDuration = time.Millisecond * 33 // 30 FPS
-	// h264FrameDuration = time.Duration(time.Second / targetFPS)
-	h264FrameDuration = time.Duration(time.Second / 120)
+	h264FrameDuration = time.Duration(time.Second / targetFPS)
 )
 
 var (
-	nalSeparator = []byte{0, 0, 0, 1} //NAL break
-
 	chVideoRdy = make(chan struct{})
 )
 

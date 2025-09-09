@@ -14,8 +14,8 @@ const (
 var (
 	connectedClients uint8 = 0
 
-	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
-	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
+	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](128)
+	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](256)
 
 	wsClients []*WsClient = make([]*WsClient, MAX_CONNECTED_CLIENT)
 
@@ -37,9 +37,6 @@ func main() {
 	//       otherwize no video feed is present
 	createMediaEngine()
 
-	go fillVideoTrack(videoTrack)
-	go fillAudioTrack(audioTrack)
-
 	if isVideoSourceAvailable() {
 		log.Printf("Starting video feed.\n")
 		go startVideoFeed()
@@ -53,6 +50,10 @@ func main() {
 	log.Printf("Audio Ready!")
 	<-chVideoRdy
 	log.Printf("Video Ready!")
+
+	// go fillVideoTrack(videoTrack)
+	// go fillAudioTrack(audioTrack)
+	go fillBoth(videoTrack, audioTrack)
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)
