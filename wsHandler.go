@@ -47,13 +47,14 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 
 	defer func() {
 		log.Printf("[WebSocket] Cleaning client with id %s\n", client.id.String())
-		client.ws.Close()
 		for i, c := range wsClients {
 			if c.id == client.id {
 				wsClients[i] = nil
 				break
 			}
 		}
+
+		client.ws.Close()
 	}()
 
 	log.Printf("WebSocket client connected.\n")
