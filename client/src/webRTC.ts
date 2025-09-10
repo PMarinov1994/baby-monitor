@@ -1,7 +1,5 @@
-export async function connectToSender(videoEl: HTMLVideoElement) {
+export async function connectToSender(pc: RTCPeerConnection, videoEl: HTMLVideoElement) {
     console.log('CONNECTING TO SENDER');
-
-    const pc = new RTCPeerConnection({})
 
     pc.ontrack = event => {
         // console.log(event.streams)

@@ -96,7 +96,7 @@ volumeSlider.addEventListener('change', () => {
     ws.send(chunks.join(DATA_SEPARATOR))
 })
 
-export function wsConnect(): void {
+export function wsConnect(pc: RTCPeerConnection): void {
     const loc = window.location;
 
     ws = new WebSocket(`ws://${loc.host}/api`);
@@ -142,5 +142,6 @@ export function wsConnect(): void {
 
     ws.onclose = () => {
         console.log('WebSocket connection closed');
+        pc.close()
     };
 }
