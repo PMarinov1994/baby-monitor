@@ -14,8 +14,8 @@ const (
 var (
 	connectedClients uint8 = 0
 
-	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](128)
-	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](256)
+	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](4)
+	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
 
 	wsClients []*WsClient = make([]*WsClient, MAX_CONNECTED_CLIENT)
 
