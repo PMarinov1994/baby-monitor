@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"os/exec"
 	"time"
 
@@ -16,8 +15,8 @@ const (
 	sampleRate = 48000
 	channels   = 2
 	// frameSize  = 960 // 20 ms at 48kHz
-	frameSize = sampleRate * 40 / 1000 // 20 ms at 48kHz
-
+	frameSize         = sampleRate * 40 / 1000 // 20 ms at 48kHz
+	bitsPerSample     = 16                     // 16-bit audio
 	opusFrameDuration = time.Millisecond * 40
 )
 
@@ -33,7 +32,7 @@ func startAudioFeed() {
 		// "-D", "hw:Zero,0", // TODO: handle the rpi sound card?
 		"-c", fmt.Sprint(channels),
 		"-r", fmt.Sprint(sampleRate),
-		"-f", "FLOAT_LE", //"S16_LE",
+		"-f", "S16_LE",
 		"-q",
 	)
 
@@ -54,9 +53,15 @@ func startAudioFeed() {
 		checkError(&err)
 	}
 
+	// Calculate bytes per chunk
+	samplesPerChunk := int(float64(sampleRate) * opusFrameDuration.Seconds())
+	bytesPerSample := bitsPerSample / 8
+	chunkSize := samplesPerChunk * channels * bytesPerSample // 7680 bytes for 40ms at 48kHz, 16-bit, stereo
+	totalSamplesPerChunk := samplesPerChunk * channels       // 3840 samples (interleaved)
+
 	// Buffers
-	pcm := make([]float32, frameSize*channels) // float32 PCM samples
-	pcmBytes := make([]byte, len(pcm)*4)       // raw PCM bytes (4 bytes per sample)
+	pcm := make([]int16, totalSamplesPerChunk) // float32 PCM samples
+	pcmBytes := make([]byte, chunkSize)        // raw PCM bytes (4 bytes per sample)
 	packet := make([]byte, 4000)               // encoded packet buffer
 
 	close(chAudioRdy)
@@ -67,13 +72,13 @@ func startAudioFeed() {
 		}
 
 		// Convert byte PCM to int16 samples
-		for i := range pcm {
-			bits := binary.LittleEndian.Uint32(pcmBytes[i*4:])
-			pcm[i] = math.Float32frombits(bits)
+		for i := range totalSamplesPerChunk {
+			// Convert 2 bytes to int16 (little-endian)
+			pcm[i] = int16(binary.LittleEndian.Uint16(pcmBytes[i*2 : (i+1)*2]))
 		}
 
 		// Encode to Opus
-		n, err := encoder.EncodeFloat32(pcm, packet)
+		n, err := encoder.Encode(pcm, packet)
 		if err != nil {
 			checkError(&err)
 		}
