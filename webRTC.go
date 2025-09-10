@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/pion/interceptor"
@@ -107,6 +108,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	log.Println("CONNECT REQUEST")
 
 	if connectedClients >= MAX_CONNECTED_CLIENT {
+		log.Printf("Rejected new client connection")
 		http.Error(res, "No connection spots left", 500)
 		return
 	}
@@ -139,7 +141,9 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	// Read incoming RTCP packets
 	// Before these packets are returned they are processed by interceptors. For things
 	// like NACK this needs to be called.
-	processRTCP := func(rtpSender *webrtc.RTPSender) {
+	processRTCP := func(rtpSender *webrtc.RTPSender, wg *sync.WaitGroup) {
+		defer wg.Done()
+
 		rtcpBuf := make([]byte, 1500)
 		for {
 			if _, _, rtcpErr := rtpSender.Read(rtcpBuf); rtcpErr != nil {
@@ -147,9 +151,24 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
+
+	var senderDisconnWaitGr sync.WaitGroup
 	for _, rtpSender := range peerConnection.GetSenders() {
-		go processRTCP(rtpSender)
+		senderDisconnWaitGr.Add(1)
+		go processRTCP(rtpSender, &senderDisconnWaitGr)
 	}
+
+	// Run the closing routine await from the handler function
+	go func() {
+		senderDisconnWaitGr.Wait()
+		log.Println("Closing connection.")
+		if err := peerConnection.Close(); err != nil {
+			checkError(&err)
+		}
+
+		connectedClients--
+		log.Printf("connectedClients val: %d\n", connectedClients)
+	}()
 
 	var canditates []webrtc.ICECandidateInit
 	iceGatherDone := make(chan struct{})
@@ -157,6 +176,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 		if candidate != nil {
 			canditates = append(canditates, candidate.ToJSON()) // TODO: check formats or something
 		} else {
+			log.Println("Gathering Done!")
 			close(iceGatherDone)
 		}
 	})
@@ -164,13 +184,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		switch state {
 		case webrtc.PeerConnectionStateClosed:
-			// PeerConnection was explicitly closed. This usually happens from a DTLS CloseNotify
-			connectedClients--
-			log.Printf("connectedClients val: %d\n", connectedClients)
-			log.Println("Peer Connection has gone to closed. Closing connection.")
-			if err := peerConnection.Close(); err != nil {
-				checkError(&err)
-			}
+			log.Println("Peer Connection has gone to closed")
 		case webrtc.PeerConnectionStateConnected:
 			connectedClients++
 			log.Printf("connectedClients val: %d\n", connectedClients)
@@ -195,6 +209,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 		checkError(&err)
 	}
 
+	log.Println("Waiting for gathering to complete...")
 	<-iceGatherDone
 
 	response := map[string]any{
