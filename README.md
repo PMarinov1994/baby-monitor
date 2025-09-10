@@ -1,3 +1,8 @@
+## Special thanks to
+
+- Hardware encoding on Raspberry Pi -> ```https://lalitm.com/hw-encoding-raspi/```
+- Linux V4L2 API using golang -> ```https://medium.com/learning-the-go-programming-language/realtime-video-capture-with-go-65a8ac3a57da```
+
 ### Setup raspberry pi as serial gadget
 
 Create symlincs at
