@@ -8,6 +8,9 @@ const RES_SOUND_CARDS = "gotSoundCards"
 const REQ_CHANGE_SOUND = "setSound"
 const RES_CHANGE_SOUND = "gotSound"
 
+const REQ_WS_ID = "getWsId"
+const RES_WS_ID = "setWsId"
+
 const soundCardSelect = document.getElementById('soundCards') as HTMLSelectElement
 const outputsSelect = document.getElementById('outputs') as HTMLSelectElement
 const volumeSlider = document.getElementById('volume') as HTMLInputElement
@@ -103,6 +106,7 @@ export function wsConnect(pc: RTCPeerConnection): void {
 
     ws.onopen = () => {
         // console.log('WebSocket connected');
+        ws?.send(REQ_WS_ID)
         ws?.send(REQ_SOUND_CARDS)
     };
 
@@ -132,6 +136,15 @@ export function wsConnect(pc: RTCPeerConnection): void {
                 if (parts[1].toLowerCase().includes("error")) {
                     alert(parts[1])
                 }
+                break
+
+            case RES_WS_ID:
+                const wsId = parts[1]
+                const dc = pc.createDataChannel("exchange_id")
+
+                dc.send(wsId)
+                dc.close()
+
                 break
         }
     };

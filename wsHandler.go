@@ -10,12 +10,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/pion/webrtc/v4"
 	"githug.com/pmarinov1994/baby-monitor/mic"
 )
 
 type WsClient struct {
-	ws *websocket.Conn
-	id uuid.UUID
+	ws             *websocket.Conn
+	id             uuid.UUID
+	peerConnection *webrtc.PeerConnection
 }
 
 const (
@@ -26,6 +28,9 @@ const (
 
 	REQ_CHANGE_SOUND = "setSound"
 	RES_CHANGE_SOUND = "gotSound"
+
+	REQ_WS_ID = "getWsId"
+	RES_WS_ID = "setWsId"
 )
 
 func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
@@ -55,25 +60,24 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		client.ws.Close()
+		client.peerConnection.Close()
 	}()
 
 	log.Printf("WebSocket client connected.\n")
 
-	// Add the client to a free slot
-	added := false
-	for i := range wsClients {
-		if wsClients[i] == nil {
-			wsClients[i] = &client
-			added = true
-			break
-		}
-	}
-
-	if !added {
+	if conClients >= MAX_CONNECTED_CLIENT {
 		if err := ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil, "No client spots left")); err != nil {
 			checkError(&err)
 		}
 		return
+	}
+
+	// Add the client to a free slot
+	for i := range wsClients {
+		if wsClients[i] == nil {
+			wsClients[i] = &client
+			break
+		}
 	}
 
 	log.Printf("[WebSocket] Added client with id %s\n", client.id.String())
@@ -100,6 +104,8 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 			processGetSoundCardsReq(ws)
 		case REQ_CHANGE_SOUND:
 			processVolumeChangeReq(chunks, ws)
+		case REQ_WS_ID:
+			processWsIdReq(client.id, ws)
 		}
 	}
 }
@@ -192,4 +198,15 @@ func processVolumeChangeReq(chunks []string, ws *websocket.Conn) {
 	}
 
 	log.Printf("Change volume result: %t\n", res)
+}
+
+func processWsIdReq(id uuid.UUID, ws *websocket.Conn) {
+	ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
+		"%s%s%s",
+		RES_WS_ID,
+		DATA_SEPARATOR,
+		id.String(),
+	))
+
+	log.Printf("Sending WsClient ID: %s\n", id.String())
 }

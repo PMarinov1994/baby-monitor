@@ -97,7 +97,7 @@ func createMediaEngine() {
 func handleConnection(res http.ResponseWriter, req *http.Request) {
 	log.Println("CONNECT REQUEST")
 
-	if connectedClients >= MAX_CONNECTED_CLIENT {
+	if conClients >= MAX_CONNECTED_CLIENT {
 		log.Printf("Rejected new client connection")
 		http.Error(res, "No connection spots left", 500)
 		return
@@ -148,18 +148,6 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 		go processRTCP(rtpSender, &senderDisconnWaitGr)
 	}
 
-	// Run the closing routine await from the handler function
-	go func() {
-		senderDisconnWaitGr.Wait()
-		log.Println("Closing connection.")
-		if err := peerConnection.Close(); err != nil {
-			checkError(&err)
-		}
-
-		connectedClients--
-		log.Printf("connectedClients val: %d\n", connectedClients)
-	}()
-
 	var canditates []webrtc.ICECandidateInit
 	iceGatherDone := make(chan struct{})
 	peerConnection.OnICECandidate(func(candidate *webrtc.ICECandidate) {
@@ -176,10 +164,38 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 		case webrtc.PeerConnectionStateClosed:
 			log.Println("Peer Connection has gone to closed")
 		case webrtc.PeerConnectionStateConnected:
-			connectedClients++
-			log.Printf("connectedClients val: %d\n", connectedClients)
 			log.Println("Peer Connection connected")
 		}
+	})
+
+	peerConnection.OnDataChannel(func(dataChannel *webrtc.DataChannel) {
+		fmt.Printf("New DataChannel %s %d\n", dataChannel.Label(), dataChannel.ID())
+
+		dataChannel.OnOpen(func() {
+			log.Printf("DataChannel Opened %s %d\n", dataChannel.Label(), *dataChannel.ID())
+		})
+
+		dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
+			strMsg := string(msg.Data)
+			log.Printf("Got message from DataChannel %s\n", strMsg)
+
+			found := false
+			for _, c := range wsClients {
+				if c.id.String() == strMsg {
+					c.peerConnection = peerConnection
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				log.Printf("Could not find client with id %s\n", strMsg)
+			}
+		})
+
+		dataChannel.OnClose(func() {
+			log.Printf("DataChannel Closed %s %d\n", dataChannel.Label(), *dataChannel.ID())
+		})
 	})
 
 	// Set the remote SessionDescription

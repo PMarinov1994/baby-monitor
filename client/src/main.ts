@@ -19,7 +19,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const pc = new RTCPeerConnection({})
 
     connectToSender(pc, videoElem).then(() => {
-        console.log("Successfull connection")
+        console.log("Successfull connection to webRTC.")
+        console.log("Connecting to WebSocket.")
+        wsConnect(pc);
     });
-    wsConnect(pc);
 });
