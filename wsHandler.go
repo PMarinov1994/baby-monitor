@@ -59,8 +59,16 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 			}
 		}
 
-		client.ws.Close()
-		client.peerConnection.Close()
+		if err := client.ws.Close(); err != nil {
+			checkError(&err)
+		}
+
+		if err := client.peerConnection.Close(); err != nil {
+			checkError(&err)
+		}
+
+		conClients--
+		log.Printf("ConnClients: %d\n", conClients)
 	}()
 
 	log.Printf("WebSocket client connected.\n")

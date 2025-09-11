@@ -169,7 +169,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	})
 
 	peerConnection.OnDataChannel(func(dataChannel *webrtc.DataChannel) {
-		fmt.Printf("New DataChannel %s %d\n", dataChannel.Label(), dataChannel.ID())
+		log.Printf("New DataChannel %s %d\n", dataChannel.Label(), dataChannel.ID())
 
 		dataChannel.OnOpen(func() {
 			log.Printf("DataChannel Opened %s %d\n", dataChannel.Label(), *dataChannel.ID())
@@ -182,6 +182,8 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 			found := false
 			for _, c := range wsClients {
 				if c.id.String() == strMsg {
+					conClients++
+					log.Printf("ConnClients: %d\n", conClients)
 					c.peerConnection = peerConnection
 					found = true
 					break
@@ -191,6 +193,8 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 			if !found {
 				log.Printf("Could not find client with id %s\n", strMsg)
 			}
+
+			dataChannel.Send(fmt.Appendf(nil, "OK"))
 		})
 
 		dataChannel.OnClose(func() {

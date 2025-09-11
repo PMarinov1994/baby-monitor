@@ -99,7 +99,7 @@ volumeSlider.addEventListener('change', () => {
     ws.send(chunks.join(DATA_SEPARATOR))
 })
 
-export function wsConnect(pc: RTCPeerConnection): void {
+export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
     const loc = window.location;
 
     ws = new WebSocket(`ws://${loc.host}/api`);
@@ -140,10 +140,16 @@ export function wsConnect(pc: RTCPeerConnection): void {
 
             case RES_WS_ID:
                 const wsId = parts[1]
-                const dc = pc.createDataChannel("exchange_id")
-                dc.onopen = () => {
+                console.log("Sending message")
+
+                dc.onmessage = _ => dc.close()
+                if (dc.readyState !== "open") {
+                    dc.onopen = () => {
+                        console.log("On datachannel open")
+                        dc.send(wsId)
+                    }
+                } else {
                     dc.send(wsId)
-                    dc.close()
                 }
 
                 break

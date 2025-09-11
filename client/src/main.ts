@@ -17,10 +17,11 @@ soundSettingsCloseBtn.addEventListener('click', () => {
 
 window.addEventListener('DOMContentLoaded', () => {
     const pc = new RTCPeerConnection({})
+    const dc = pc.createDataChannel("exchange_id")
 
     connectToSender(pc, videoElem).then(() => {
         console.log("Successfull connection to webRTC.")
         console.log("Connecting to WebSocket.")
-        wsConnect(pc);
+        wsConnect(pc, dc);
     });
 });
