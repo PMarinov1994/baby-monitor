@@ -141,9 +141,10 @@ export function wsConnect(pc: RTCPeerConnection): void {
             case RES_WS_ID:
                 const wsId = parts[1]
                 const dc = pc.createDataChannel("exchange_id")
-
-                dc.send(wsId)
-                dc.close()
+                dc.onopen = () => {
+                    dc.send(wsId)
+                    dc.close()
+                }
 
                 break
         }
