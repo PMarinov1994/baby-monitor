@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
+	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](4)
 	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
 
 	conClients uint8       = 0
