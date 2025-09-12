@@ -140,6 +140,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 		rtcpBuf := make([]byte, 1500)
 		for {
 			if _, _, rtcpErr := rtpSender.Read(rtcpBuf); rtcpErr != nil {
+				log.Printf("Process RTCP done %v\n", rtcpErr)
 				return
 			}
 		}

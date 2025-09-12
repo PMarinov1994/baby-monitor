@@ -77,6 +77,7 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		if err := ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil, "No client spots left")); err != nil {
 			checkError(&err)
 		}
+		log.Printf("Rejecting WebSocket Upgrade\n")
 		return
 	}
 
