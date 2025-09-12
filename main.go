@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](4)
+	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
 	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
 
 	conClients uint8       = 0
@@ -50,10 +50,9 @@ func main() {
 	<-chVideoRdy
 	log.Printf("Video Ready!")
 
-	// go fillVideoTrack(videoTrack)
-	// go fillAudioTrack(audioTrack)
-
-	go fillBoth(videoTrack, audioTrack)
+	go createPkgs()
+	go sendAudioPkgs(audioTrack)
+	go sendVideoPkgs(videoTrack)
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)

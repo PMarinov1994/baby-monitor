@@ -29,6 +29,9 @@ var (
 
 	videoTrack *webrtc.TrackLocalStaticSample
 	audioTrack *webrtc.TrackLocalStaticSample
+
+	audioPkgs *ringBuffer[*media.Sample] = createRingBuffer[*media.Sample](1)
+	videoPkgs *ringBuffer[*media.Sample] = createRingBuffer[*media.Sample](1)
 )
 
 func createMediaEngine() {
@@ -244,57 +247,43 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func fillVideoTrack(videoTrack *webrtc.TrackLocalStaticSample) {
-	for {
-
-		data := <-videoFrames.Read()
-		if writeErr := videoTrack.WriteSample(
-			media.Sample{
-				Data:      data,
-				Duration:  h264FrameDuration,
-				Timestamp: time.Now(),
-			}); writeErr != nil {
+func sendAudioPkgs(audioTrack *webrtc.TrackLocalStaticSample) {
+	for pkg := range audioPkgs.Read() {
+		if writeErr := audioTrack.WriteSample(*pkg); writeErr != nil {
 			checkError(&writeErr)
 		}
 	}
 }
 
-func fillAudioTrack(audioTrack *webrtc.TrackLocalStaticSample) {
-	for {
-		data := <-audioFrames.Read()
-		if writeErr := audioTrack.WriteSample(
-			media.Sample{
-				Data:      data,
-				Duration:  opusFrameDuration,
-				Timestamp: time.Now(),
-			}); writeErr != nil {
+func sendVideoPkgs(videoTrack *webrtc.TrackLocalStaticSample) {
+	for pkg := range videoPkgs.Read() {
+		if writeErr := videoTrack.WriteSample(*pkg); writeErr != nil {
 			checkError(&writeErr)
 		}
 	}
 }
 
-func fillBoth(videoTrack *webrtc.TrackLocalStaticSample, audioTrack *webrtc.TrackLocalStaticSample) {
+func createPkgs() {
 	for {
-		now := time.Now()
 
 		audioData := <-audioFrames.Read()
-		if writeErr := audioTrack.WriteSample(
-			media.Sample{
-				Data:      audioData,
-				Duration:  opusFrameDuration,
-				Timestamp: now,
-			}); writeErr != nil {
-			checkError(&writeErr)
+		videoData := <-videoFrames.Read()
+
+		now := time.Now()
+
+		audioPkg := &media.Sample{
+			Data:      audioData,
+			Duration:  opusFrameDuration,
+			Timestamp: now,
 		}
 
-		videoData := <-videoFrames.Read()
-		if writeErr := videoTrack.WriteSample(
-			media.Sample{
-				Data:      videoData,
-				Duration:  h264FrameDuration,
-				Timestamp: now,
-			}); writeErr != nil {
-			checkError(&writeErr)
+		videoPkg := &media.Sample{
+			Data:      videoData,
+			Duration:  h264FrameDuration,
+			Timestamp: now,
 		}
+
+		audioPkgs.Push(audioPkg)
+		videoPkgs.Push(videoPkg)
 	}
 }
