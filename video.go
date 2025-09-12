@@ -12,20 +12,17 @@ import (
 )
 
 const (
-	readBufferSize = 4096
-	bufferSizeKB   = 256
-
 	// FullHD
 	// width     = 1920
 	// height    = 1080
 
 	// 2028x1080
-	width  = 2028
-	height = 1080
+	// width  = 2028
+	// height = 1080
 
 	// HD
-	// width  = 1280
-	// height = 720
+	width  = 1280
+	height = 720
 
 	targetFPS = 25
 
