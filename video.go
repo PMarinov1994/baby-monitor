@@ -113,186 +113,27 @@ func startVideoFeed() {
 
 	camReader := newYUVReader(stdout, width, height)
 
-	fd, err := v4l2.OpenDevice("/dev/video11", os.O_RDWR, 0)
-	if err != nil {
+	var encoder Encoder
+	if err := encoder.Init("/dev/video11", width, height); err != nil {
 		checkError(&err)
 	}
 
-	defer v4l2.CloseDevice(fd)
-
-	logCtrlInfo(fd)
-
-	// Start of encoder config
-
-	// NOTE: This is important for live streams, since clients can join at any time,
-	//       and we need to let them know about the h264 SPS/PPS (sequence) parameters
-	if err := v4l2.SetControlValue(fd, v4l2.CtrlMpegRepeatSeqHeader, 1); err != nil {
-		checkError(&err)
-	}
-
-	// // for ~1s GOP at 30fps; balances latency and efficiency
-	// if err := v4l2.SetControlValue(fd, v4l2.CtrlMPEGVideoGOPSize, 30); err != nil {
-	// 	checkError(&err)
-	// }
-
-	// // Max bitrate
-	// if err := v4l2.SetControlValue(fd, v4l2.CtrlMPEGVideoBitrate, 25000000); err != nil {
-	// 	checkError(&err)
-	// }
-
-	// // lowest possible for max quality
-	// if err := v4l2.SetControlValue(fd, H264_MINIMUM_QP_VALUE, 0); err != nil {
-	// 	checkError(&err)
-	// }
-
-	// // caps compression; ensures high quality even in motion-heavy scenes
-	// if err := v4l2.SetControlValue(fd, H264_MAXIMUM_QP_VALUE, 20); err != nil {
-	// 	checkError(&err)
-	// }
-
-	// // Set to 30 (sync with GOP size for consistency)
-	// if err := v4l2.SetControlValue(fd, H264_I_FRAME_PERIOD, 30); err != nil {
-	// 	checkError(&err)
-	// }
-
-	// NOTE: This does not seem to work if != 4
-
-	// Set to 0 (Baseline) for minimal hardware effort and lowest latency—avoids complex tools,
-	// widely supported on mobiles.
-	// if err := v4l2.SetControlValue(fd, H264_PROFILE, 0); err != nil {
-	// 	checkError(&err)
-	// }
-
-	// End of encoder config
-
-	outFmMplane, err := v4l2.GetPixFormatMPlane(fd, v4l2.BufTypeVideoOutputMPlane)
-	if err != nil {
-		checkError(&err)
-	}
-
-	outFmMplane.Width = width
-	outFmMplane.Height = height
-	outFmMplane.PixelFormat = v4l2.PixelFmtYUV410
-
-	if err := v4l2.SetPixFormatMPlane(fd, outFmMplane, v4l2.BufTypeVideoOutputMPlane); err != nil {
-		checkError(&err)
-	}
-
-	capFmMplane, err := v4l2.GetPixFormatMPlane(fd, v4l2.BufTypeVideoCaptureMPlane)
-	if err != nil {
-		checkError(&err)
-	}
-
-	capFmMplane.Width = width
-	capFmMplane.Height = height
-
-	if err := v4l2.SetPixFormatMPlane(fd, capFmMplane, v4l2.BufTypeVideoCaptureMPlane); err != nil {
-		checkError(&err)
-	}
-
-	streamParam := v4l2.StreamParam{
-		Type: v4l2.BufTypeVideoOutputMPlane,
-		Output: v4l2.OutputParam{
-			TimePerFrame: v4l2.Fract{
-				Numerator:   1,
-				Denominator: 30,
-			},
-		},
-	}
-
-	if err := v4l2.SetStreamParam(fd, v4l2.BufTypeVideoOutputMPlane, streamParam); err != nil {
-		checkError(&err)
-	}
-
-	outputDev := StreamingDevice{
-		fd:      fd,
-		bufType: v4l2.BufTypeVideoOutputMPlane,
-		ioType:  v4l2.IOTypeMMAP,
-		count:   1,
-	}
-
-	outReqBuf, err := v4l2.InitBuffers(outputDev) // VIDIOC_REQBUFS
-	if err != nil {
-		checkError(&err)
-	}
-
-	outputDev.output = make(chan []byte, outReqBuf.Count)
-	outputDev.buffers, err = v4l2.MapMemoryBuffers(outputDev) // mmap
-	if err != nil {
-		checkError(&err)
-	}
-
-	capDev := StreamingDevice{
-		fd:      fd,
-		bufType: v4l2.BufTypeVideoCaptureMPlane,
-		ioType:  v4l2.IOTypeMMAP,
-		count:   1,
-	}
-
-	capReqBuf, err := v4l2.InitBuffers(capDev) // VIDIOC_REQBUFS
-	if err != nil {
-		checkError(&err)
-	}
-
-	capDev.output = make(chan []byte, capReqBuf.Count)
-	capDev.buffers, err = v4l2.MapMemoryBuffers(capDev) // mmap
-	if err != nil {
-		checkError(&err)
-	}
-
-	if _, err := v4l2.QueueBuffer(outputDev, 0, 0); err != nil { // VIDIOC_QBUF
-		checkError(&err)
-	}
-
-	if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
-		checkError(&err)
-	}
-
-	if err := v4l2.StreamOn(outputDev); err != nil { // VIDIOC_STREAMON
-		checkError(&err)
-	}
-
-	defer v4l2.StreamOff(outputDev)
-
-	if err := v4l2.StreamOn(capDev); err != nil { // VIDIOC_STREAMON
-		checkError(&err)
-	}
-
-	defer v4l2.StreamOff(capDev)
-
-	defer func() {
-		log.Printf("Closing stuf")
-	}()
+	defer encoder.Close()
 
 	close(chVideoRdy)
 	for {
-
-		if _, err := v4l2.DequeueBuffer(outputDev); err != nil { // VIDIOC_DQBUF
-			checkError(&err)
-		}
 
 		frame, err := camReader.Read()
 		if err != nil {
 			checkError(&err)
 		}
 
-		copy(outputDev.buffers[0], frame)
-		if _, err := v4l2.QueueBuffer(outputDev, 0, uint32(len(frame))); err != nil { // VIDIOC_QBUF
-			checkError(&err)
-		}
-
-		encodedBuf, err := v4l2.DequeueBuffer(capDev) // VIDIOC_DQBUF
-		if err != nil {
-			checkError(&err)
-		}
-
-		encodedFrame := make([]byte, encodedBuf.Info.Planes[0].BytesUsed)
-		copy(encodedFrame, capDev.buffers[0][:encodedBuf.Info.Planes[0].BytesUsed])
-		videoFrames.Push(encodedFrame)
-
-		if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
-			checkError(&err)
-		}
+		// Feed the encoder
+		encoder.rawFrameCh <- frame
+		// Process frame
+		encoder.ProcessFrame()
+		// Get frame
+		videoFrames.Push(<-encoder.encodedFrameCh)
 	}
 }
 
