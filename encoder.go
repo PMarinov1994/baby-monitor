@@ -24,11 +24,12 @@ type Encoder struct {
 	outputDev StreamingDevice
 }
 
-func (encoder *Encoder) Init(dev string, width, height uint32) error {
+func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCType) error {
 	var err error = nil
 
 	encoder.fd, err = v4l2.OpenDevice(dev, os.O_RDWR, 0)
 	if err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
@@ -40,28 +41,32 @@ func (encoder *Encoder) Init(dev string, width, height uint32) error {
 		return err
 	}
 
-	outFmMplane, err := v4l2.GetPixFormatMPlane(encoder.fd, v4l2.BufTypeVideoOutputMPlane)
+	outFmtMPlane, err := v4l2.GetPixFormat(encoder.fd, v4l2.BufTypeVideoOutputMPlane)
 	if err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
-	outFmMplane.Width = width
-	outFmMplane.Height = height
-	outFmMplane.PixelFormat = v4l2.PixelFmtYUV410
+	outFmtMPlane.Width = width
+	outFmtMPlane.Height = height
+	outFmtMPlane.PixelFormat = fmt
 
-	if err := v4l2.SetPixFormatMPlane(encoder.fd, outFmMplane, v4l2.BufTypeVideoOutputMPlane); err != nil {
+	if err := v4l2.SetPixFormat(encoder.fd, outFmtMPlane, v4l2.BufTypeVideoOutputMPlane); err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
-	capFmMplane, err := v4l2.GetPixFormatMPlane(encoder.fd, v4l2.BufTypeVideoCaptureMPlane)
+	capFmtMplane, err := v4l2.GetPixFormatMPlane(encoder.fd, v4l2.BufTypeVideoCaptureMPlane)
 	if err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
-	capFmMplane.Width = width
-	capFmMplane.Height = height
+	capFmtMplane.Width = width
+	capFmtMplane.Height = height
 
-	if err := v4l2.SetPixFormatMPlane(encoder.fd, capFmMplane, v4l2.BufTypeVideoCaptureMPlane); err != nil {
+	if err := v4l2.SetPixFormatMPlane(encoder.fd, capFmtMplane, v4l2.BufTypeVideoCaptureMPlane); err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
@@ -76,6 +81,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32) error {
 	}
 
 	if err := v4l2.SetStreamParam(encoder.fd, v4l2.BufTypeVideoOutputMPlane, streamParam); err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
@@ -88,12 +94,14 @@ func (encoder *Encoder) Init(dev string, width, height uint32) error {
 
 	outReqBuf, err := v4l2.InitBuffers(encoder.outputDev) // VIDIOC_REQBUFS
 	if err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
 	encoder.outputDev.output = make(chan []byte, outReqBuf.Count)
 	encoder.outputDev.buffers, err = v4l2.MapMemoryBuffers(encoder.outputDev) // mmap
 	if err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
@@ -106,28 +114,34 @@ func (encoder *Encoder) Init(dev string, width, height uint32) error {
 
 	capReqBuf, err := v4l2.InitBuffers(encoder.capDev) // VIDIOC_REQBUFS
 	if err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
 	encoder.capDev.output = make(chan []byte, capReqBuf.Count)
 	encoder.capDev.buffers, err = v4l2.MapMemoryBuffers(encoder.capDev) // mmap
 	if err != nil {
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
 	if _, err := v4l2.QueueBuffer(encoder.outputDev, 0, 0); err != nil { // VIDIOC_QBUF
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
 	if _, err := v4l2.QueueBuffer(encoder.capDev, 0, 0); err != nil { // VIDIOC_QBUF
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
 	if err := v4l2.StreamOn(encoder.outputDev); err != nil { // VIDIOC_STREAMON
+		checkError(&err) // TODO: Remove
 		return err
 	}
 
 	if err := v4l2.StreamOn(encoder.capDev); err != nil { // VIDIOC_STREAMON
+		checkError(&err) // TODO: Remove
 		return err
 	}
 

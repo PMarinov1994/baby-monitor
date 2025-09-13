@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"io"
 	"log"
 	"os/exec"
 	"time"
 
+	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
@@ -79,41 +80,48 @@ func (reader *streamYUVReader) Read() ([]byte, error) {
 }
 
 func startVideoFeed() {
-	/*
-	   0 : imx477 [4056x3040 12-bit RGGB] (/base/soc/i2c0mux/i2c@1/imx477@1a)
-	       Modes: 'SRGGB10_CSI2P' : 1332x990 [120.05 fps - (696, 528)/2664x1980 crop]
-	              'SRGGB12_CSI2P' : 2028x1080 [50.03 fps - (0, 440)/4056x2160 crop]
-	                                2028x1520 [40.01 fps - (0, 0)/4056x3040 crop]
-	                                4056x3040 [10.00 fps - (0, 0)/4056x3040 crop]
-	*/
-	// cmd := exec.Command("rpicam-vid", "--low-latency", "-t", "0", "--inline", "--width", "1920", "--height", "1080", "--framerate", "30", "-o", "-")
-	cmd := exec.Command(
-		"rpicam-vid",
-		"--nopreview",
-		"--flush",
-		"-t", "0",
-		"--width", fmt.Sprint(width),
-		"--height", fmt.Sprint(height),
-		"--framerate", fmt.Sprint(targetFPS),
-		"--codec", "yuv420",
-		"-o", "-")
-
-	stdout, err := cmd.StdoutPipe()
+	device, err := device.Open(
+		"/dev/video12",
+		device.WithVideoCaptureEnabled(),
+		// device.WithBufferSize(4),
+	)
 	if err != nil {
 		checkError(&err)
 	}
 
-	log.Printf("starting: %s\n", cmd.String())
-	if err := cmd.Start(); err != nil {
+	pixFmt, err := device.GetPixFormat()
+	if err != nil {
 		checkError(&err)
 	}
 
-	defer cmd.Process.Kill()
+	pixFmt.Colorspace = v4l2.PixelFmtYUV420
+	pixFmt.Width = width
+	pixFmt.Height = height
+	// pixFmt.Field = v4l2.FieldNone
 
-	camReader := newYUVReader(stdout, width, height)
+	if err := device.SetPixFormat(pixFmt); err != nil {
+		checkError(&err)
+	}
+
+	log.Printf("Pixel Format: %v\n", pixFmt)
+
+	cropCpb, err := device.GetCropCapability()
+	if err != nil {
+		checkError(&err)
+	}
+
+	log.Printf("Crop Capability: %v\n", cropCpb)
+
+	ctx := context.Background()
+	device.Start(ctx)
+	log.Println("StreamOn was successfull")
 
 	var encoder Encoder
-	if err := encoder.Init("/dev/video11", width, height); err != nil {
+	if err := encoder.Init(
+		"/dev/video11",
+		pixFmt.Width,
+		pixFmt.Height,
+		pixFmt.PixelFormat); err != nil {
 		checkError(&err)
 	}
 
@@ -126,13 +134,7 @@ func startVideoFeed() {
 	defer encoder.Close()
 
 	close(chVideoRdy)
-	for {
-
-		frame, err := camReader.Read()
-		if err != nil {
-			checkError(&err)
-		}
-
+	for frame := range device.GetOutput() {
 		// Feed the encoder
 		encoder.rawFrameCh <- frame
 		// Get frame

@@ -63,7 +63,7 @@ pcm.!default {
 - Raspberry Pi Camera
 ```
 camera_auto_detect=0
-dtoverlay=imx477
+dtoverlay=imx477,media-controller=0 # Disable media-controller to allow v4l2 to set formats
 ```
 
 ## Development dependencies
