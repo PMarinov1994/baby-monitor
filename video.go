@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"os/exec"
 	"time"
 
@@ -118,6 +117,12 @@ func startVideoFeed() {
 		checkError(&err)
 	}
 
+	go func() {
+		for {
+			encoder.ProcessFrame()
+		}
+	}()
+
 	defer encoder.Close()
 
 	close(chVideoRdy)
@@ -130,8 +135,6 @@ func startVideoFeed() {
 
 		// Feed the encoder
 		encoder.rawFrameCh <- frame
-		// Process frame
-		encoder.ProcessFrame()
 		// Get frame
 		videoFrames.Push(<-encoder.encodedFrameCh)
 	}
