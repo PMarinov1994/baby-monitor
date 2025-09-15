@@ -21,6 +21,20 @@ sudo ln -s /lib/systemd/system/getty@.service getty@ttyGS0.service
 - libopusfile-dev
 - rpicam-apps
 
+### Building rpicam-apps
+- libcamera-dev
+- libopencv-dev
+
+# Build
+- cmake
+- libboost-program-options-dev
+- libdrm-dev
+- libexif-dev
+
+# Build-extra
+- meson
+- ninja-build
+
 ```
 sudo apt update && sudo apt upgrade -y && sudo apt install -y libasound2-dev libopus-dev libopusfile-dev rpicam-apps
 ```

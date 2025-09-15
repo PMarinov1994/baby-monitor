@@ -33,7 +33,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 		return err
 	}
 
-	logCtrlInfo(encoder.fd)
+	// logCtrlInfo(encoder.fd)
 
 	// NOTE: This is important for live streams, since clients can join at any time,
 	//       and we need to let them know about the h264 SPS/PPS (sequence) parameters
@@ -41,7 +41,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 		return err
 	}
 
-	outFmtMPlane, err := v4l2.GetPixFormat(encoder.fd, v4l2.BufTypeVideoOutputMPlane)
+	outFmtMPlane, err := v4l2.GetPixFormatMPlane(encoder.fd, v4l2.BufTypeVideoOutputMPlane)
 	if err != nil {
 		checkError(&err) // TODO: Remove
 		return err
@@ -51,7 +51,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 	outFmtMPlane.Height = height
 	outFmtMPlane.PixelFormat = fmt
 
-	if err := v4l2.SetPixFormat(encoder.fd, outFmtMPlane, v4l2.BufTypeVideoOutputMPlane); err != nil {
+	if err := v4l2.SetPixFormatMPlane(encoder.fd, outFmtMPlane, v4l2.BufTypeVideoOutputMPlane); err != nil {
 		checkError(&err) // TODO: Remove
 		return err
 	}
@@ -64,23 +64,9 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 
 	capFmtMplane.Width = width
 	capFmtMplane.Height = height
+	capFmtMplane.PixelFormat = v4l2.PixelFmtH264
 
 	if err := v4l2.SetPixFormatMPlane(encoder.fd, capFmtMplane, v4l2.BufTypeVideoCaptureMPlane); err != nil {
-		checkError(&err) // TODO: Remove
-		return err
-	}
-
-	streamParam := v4l2.StreamParam{
-		Type: v4l2.BufTypeVideoOutputMPlane,
-		Output: v4l2.OutputParam{
-			TimePerFrame: v4l2.Fract{
-				Numerator:   1,
-				Denominator: 30,
-			},
-		},
-	}
-
-	if err := v4l2.SetStreamParam(encoder.fd, v4l2.BufTypeVideoOutputMPlane, streamParam); err != nil {
 		checkError(&err) // TODO: Remove
 		return err
 	}
@@ -158,8 +144,8 @@ func (encoder *Encoder) ProcessFrame() {
 
 	frame := <-encoder.rawFrameCh
 
-	copy(encoder.outputDev.buffers[0], frame)
-	if _, err := v4l2.QueueBuffer(encoder.outputDev, 0, uint32(len(frame))); err != nil { // VIDIOC_QBUF
+	n := copy(encoder.outputDev.buffers[0], frame)
+	if _, err := v4l2.QueueBuffer(encoder.outputDev, 0, uint32(n)); err != nil { // VIDIOC_QBUF
 		checkError(&err)
 	}
 

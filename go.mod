@@ -36,4 +36,4 @@ require (
 	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
 )
 
-replace github.com/vladimirvivien/go4vl => github.com/pmarinov1994/go4vl v0.0.0-20250914214842-c9fdef282855
+replace github.com/vladimirvivien/go4vl => github.com/pmarinov1994/go4vl v0.0.0-20250915213901-921dff977ef4

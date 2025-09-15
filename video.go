@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"time"
 
+	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
@@ -79,58 +81,63 @@ func (reader *streamYUVReader) Read() ([]byte, error) {
 }
 
 func startVideoFeed() {
-	fd, err := v4l2.OpenDevice("/dev/video12", os.O_RDWR, 0)
+	device, err := device.Open(
+		"/dev/video0",
+		device.WithVideoCaptureEnabled(),
+		device.WithBufferSize(1),
+	)
 	if err != nil {
 		checkError(&err)
 	}
 
-	pixFmt, err := v4l2.GetPixFormatMPlane(fd, v4l2.BufTypeVideoCaptureMPlane)
+	pixFmt, err := device.GetPixFormat()
 	if err != nil {
 		checkError(&err)
 	}
 
 	pixFmt.Width = width
 	pixFmt.Height = height
-	pixFmt.Colorspace = v4l2.PixelFmtYUV420
+	pixFmt.PixelFormat = v4l2.PixelFmtSRGGB10
 
-	if err := v4l2.SetPixFormatMPlane(fd, pixFmt, v4l2.BufTypeVideoCaptureMPlane); err != nil {
+	if err := device.SetPixFormat(pixFmt); err != nil {
 		checkError(&err)
 	}
 
-	capDev := StreamingDevice{
-		fd:      fd,
-		bufType: v4l2.BufTypeVideoCaptureMPlane,
-		ioType:  v4l2.IOTypeMMAP,
-		count:   1,
-	}
+	log.Printf("Pixel Format: %v\n", pixFmt)
 
-	capReqBuf, err := v4l2.InitBuffers(capDev) // VIDIOC_REQBUFS
+	cropCpb, err := device.GetCropCapability()
 	if err != nil {
 		checkError(&err)
 	}
 
-	capDev.output = make(chan []byte, capReqBuf.Count)
-	capDev.buffers, err = v4l2.MapMemoryBuffers(capDev) // mmap
-	if err != nil {
-		checkError(&err)
-	}
+	log.Printf("Crop Capability: %v\n", cropCpb)
 
-	if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
-		checkError(&err)
-	}
-
-	if err := v4l2.StreamOn(capDev); err != nil { // VIDIOC_STREAMON
-		checkError(&err)
-	}
-
+	ctx := context.Background()
+	device.Start(ctx)
 	log.Println("StreamOn was successfull")
+
+	var isp ISP
+	if err := isp.Init(
+		"/dev/video12",
+		width,
+		height,
+		v4l2.PixelFmtSRGGB10,
+		v4l2.PixelFmtYUV410); err != nil {
+		checkError(&err)
+	}
+
+	go func() {
+		for {
+			isp.ProcessFrame()
+		}
+	}()
 
 	var encoder Encoder
 	if err := encoder.Init(
 		"/dev/video11",
-		pixFmt.Width,
-		pixFmt.Height,
-		pixFmt.PixelFormat); err != nil {
+		width,
+		height,
+		v4l2.PixelFmtYUV410); err != nil {
 		checkError(&err)
 	}
 
@@ -140,27 +147,36 @@ func startVideoFeed() {
 		}
 	}()
 
-	defer encoder.Close()
-
 	close(chVideoRdy)
-	for {
-		encodedBuf, err := v4l2.DequeueBuffer(capDev) // VIDIOC_DQBUF
-		if err != nil {
+	// File path
+	filePath := "output.raw"
+
+	for rawFrame := range device.GetOutput() {
+		// Check if file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			// File doesn't exist, so write the byte array
+			err := os.WriteFile(filePath, rawFrame, 0644)
+			if err != nil {
+				checkError(&err)
+			}
+			log.Printf("Successfully wrote to %s\n", filePath)
+		} else if err != nil {
+			// Handle other potential errors from os.Stat
 			checkError(&err)
 		}
 
-		frame := make([]byte, encodedBuf.Info.Planes[0].BytesUsed)
-		copy(frame, capDev.buffers[0][:encodedBuf.Info.Planes[0].BytesUsed])
+		// Feed raw frame to image signal processor (ISP)
+		isp.inFrameCh <- rawFrame
+		// Get process image
+		processedFrame := <-isp.outFrameCh
 
 		// Feed the encoder
-		encoder.rawFrameCh <- frame
-
+		encoder.rawFrameCh <- processedFrame
 		// Get frame
-		videoFrames.Push(<-encoder.encodedFrameCh)
+		encodedFrame := <-encoder.encodedFrameCh
 
-		if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
-			checkError(&err)
-		}
+		// Push frame to packetizer
+		videoFrames.Push(encodedFrame)
 	}
 }
 

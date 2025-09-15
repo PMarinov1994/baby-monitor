@@ -53,8 +53,8 @@ github.com/pion/turn/v4 v4.1.1/go.mod h1:2123tHk1O++vmjI5VSD0awT50NywDAq5A2NNNU4
 github.com/pion/webrtc/v4 v4.1.3 h1:YZ67Boj9X/hk190jJZ8+HFGQ6DqSZ/fYP3sLAZv7c3c=
 github.com/pion/webrtc/v4 v4.1.3/go.mod h1:rsq+zQ82ryfR9vbb0L1umPJ6Ogq7zm8mcn9fcGnxomM=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
-github.com/pmarinov1994/go4vl v0.0.0-20250914214842-c9fdef282855 h1:9tI3FSSwnhrgtGoVy3xgdVzJ/dJ82OzWkOgOPdIJZHk=
-github.com/pmarinov1994/go4vl v0.0.0-20250914214842-c9fdef282855/go.mod h1:FP+/fG/X1DUdbZl9uN+l33vId1QneVn+W80JMc17OL8=
+github.com/pmarinov1994/go4vl v0.0.0-20250915213901-921dff977ef4 h1:E1RRcgEp+svWcBC5/zz/P3gX9TflA+VPgZUtSYDNWHI=
+github.com/pmarinov1994/go4vl v0.0.0-20250915213901-921dff977ef4/go.mod h1:FP+/fG/X1DUdbZl9uN+l33vId1QneVn+W80JMc17OL8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/smartystreets/assertions v1.2.0/go.mod h1:tcbTF8ujkAEcZ8TElKY+i30BzYlVhC/LOxJk7iOWnoo=
