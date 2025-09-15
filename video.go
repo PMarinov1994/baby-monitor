@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"time"
 
-	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
 )
 
@@ -80,40 +79,50 @@ func (reader *streamYUVReader) Read() ([]byte, error) {
 }
 
 func startVideoFeed() {
-	device, err := device.Open(
-		"/dev/video12",
-		device.WithVideoCaptureEnabled(),
-		// device.WithBufferSize(4),
-	)
+	fd, err := v4l2.OpenDevice("/dev/video12", os.O_RDWR, 0)
 	if err != nil {
 		checkError(&err)
 	}
 
-	pixFmt, err := device.GetPixFormat()
+	pixFmt, err := v4l2.GetPixFormatMPlane(fd, v4l2.BufTypeVideoCaptureMPlane)
 	if err != nil {
 		checkError(&err)
 	}
 
-	pixFmt.Colorspace = v4l2.PixelFmtYUV420
 	pixFmt.Width = width
 	pixFmt.Height = height
-	// pixFmt.Field = v4l2.FieldNone
+	pixFmt.Colorspace = v4l2.PixelFmtYUV420
 
-	if err := device.SetPixFormat(pixFmt); err != nil {
+	if err := v4l2.SetPixFormatMPlane(fd, pixFmt, v4l2.BufTypeVideoCaptureMPlane); err != nil {
 		checkError(&err)
 	}
 
-	log.Printf("Pixel Format: %v\n", pixFmt)
+	capDev := StreamingDevice{
+		fd:      fd,
+		bufType: v4l2.BufTypeVideoCaptureMPlane,
+		ioType:  v4l2.IOTypeMMAP,
+		count:   1,
+	}
 
-	cropCpb, err := device.GetCropCapability()
+	capReqBuf, err := v4l2.InitBuffers(capDev) // VIDIOC_REQBUFS
 	if err != nil {
 		checkError(&err)
 	}
 
-	log.Printf("Crop Capability: %v\n", cropCpb)
+	capDev.output = make(chan []byte, capReqBuf.Count)
+	capDev.buffers, err = v4l2.MapMemoryBuffers(capDev) // mmap
+	if err != nil {
+		checkError(&err)
+	}
 
-	ctx := context.Background()
-	device.Start(ctx)
+	if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
+		checkError(&err)
+	}
+
+	if err := v4l2.StreamOn(capDev); err != nil { // VIDIOC_STREAMON
+		checkError(&err)
+	}
+
 	log.Println("StreamOn was successfull")
 
 	var encoder Encoder
@@ -134,11 +143,24 @@ func startVideoFeed() {
 	defer encoder.Close()
 
 	close(chVideoRdy)
-	for frame := range device.GetOutput() {
+	for {
+		encodedBuf, err := v4l2.DequeueBuffer(capDev) // VIDIOC_DQBUF
+		if err != nil {
+			checkError(&err)
+		}
+
+		frame := make([]byte, encodedBuf.Info.Planes[0].BytesUsed)
+		copy(frame, capDev.buffers[0][:encodedBuf.Info.Planes[0].BytesUsed])
+
 		// Feed the encoder
 		encoder.rawFrameCh <- frame
+
 		// Get frame
 		videoFrames.Push(<-encoder.encodedFrameCh)
+
+		if _, err := v4l2.QueueBuffer(capDev, 0, 0); err != nil { // VIDIOC_QBUF
+			checkError(&err)
+		}
 	}
 }
 
