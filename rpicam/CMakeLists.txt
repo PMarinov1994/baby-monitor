@@ -14,16 +14,17 @@ if(NOT LIBCAMERA_FOUND)
     message(FATAL_ERROR "libcamera not found")
 endif()
 
-# Find Boost
-find_package(Boost REQUIRED COMPONENTS system filesystem)
+# Find Boost with only the program_options module
+find_package(Boost REQUIRED COMPONENTS program_options)
+
+# Check if Boost was found
 if(NOT Boost_FOUND)
-    message(FATAL_ERROR "Boost not found")
+    message(FATAL_ERROR "Boost program_options not found")
 endif()
 
-# Find rpicam-app libraries
-pkg_check_modules(RPICAM_APP REQUIRED rpicam-core)
-if(NOT RPICAM_APP_FOUND)
-    message(FATAL_ERROR "rpicam-app libraries not found")
+pkg_check_modules(RPICAM_APP REQUIRED librpicam_app)
+if(NOT LIBRPICAM_APP)
+    message(FATAL_ERROR "rpicam_app not found")
 endif()
 
 # Define your source files
@@ -38,7 +39,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         ${LIBCAMERA_LIBRARIES}
-        ${Boost_LIBRARIES}
+        Boost::program_options  # Using imported target for better dependency handling
         ${RPICAM_APP_LIBRARIES}
 )
 
