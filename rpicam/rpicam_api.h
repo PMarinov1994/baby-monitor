@@ -5,6 +5,9 @@
 
 typedef void (*CameraOutputReadyCallback)(char *mem, size_t size);
 
-extern "C" int startCamera(CameraOutputReadyCallback cb_info);
+#ifndef __cplusplus
+extern "C"
+#endif
+int startCamera(CameraOutputReadyCallback cb_info);
 
 #endif // __RPICAM_API__H

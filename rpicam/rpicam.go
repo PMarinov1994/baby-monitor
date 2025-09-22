@@ -12,7 +12,6 @@ static inline void bridgeCallback(char* mem, size_t size) {
     goCameraCallback(mem, size);
 }
 */
-
 import "C"
 
 import (
