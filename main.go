@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"githug.com/pmarinov1994/baby-monitor/mic"
+	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
 const (
@@ -12,8 +13,8 @@ const (
 )
 
 var (
-	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
-	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
+	videoFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](4)
+	audioFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](1)
 
 	conClients uint8       = 0
 	wsClients  []*WsClient = make([]*WsClient, MAX_CONNECTED_CLIENT)

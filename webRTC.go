@@ -12,6 +12,8 @@ import (
 	"github.com/pion/interceptor"
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
+
+	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
 const (
@@ -30,8 +32,8 @@ var (
 	videoTrack *webrtc.TrackLocalStaticSample
 	audioTrack *webrtc.TrackLocalStaticSample
 
-	audioPkgs *ringBuffer[*media.Sample] = createRingBuffer[*media.Sample](1)
-	videoPkgs *ringBuffer[*media.Sample] = createRingBuffer[*media.Sample](1)
+	audioPkgs *util.RingBuffer[*media.Sample] = util.CreateRingBuffer[*media.Sample](1)
+	videoPkgs *util.RingBuffer[*media.Sample] = util.CreateRingBuffer[*media.Sample](1)
 )
 
 func createMediaEngine() {

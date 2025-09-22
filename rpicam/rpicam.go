@@ -14,36 +14,16 @@ static inline void bridgeCallback(char* mem, size_t size) {
 */
 
 import "C"
+
 import (
 	"unsafe"
+
+	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
 var (
 	rpiCamera *RpiCamera
 )
-
-type ringBuffer[T any] struct {
-	ch chan T
-}
-
-func createRingBuffer[T any](size int) *ringBuffer[T] {
-	return &ringBuffer[T]{
-		ch: make(chan T, size),
-	}
-}
-
-func (r *ringBuffer[T]) Push(data T) {
-	select {
-	case r.ch <- data:
-	default:
-		<-r.ch
-		r.ch <- data
-	}
-}
-
-func (r *ringBuffer[T]) Read() <-chan T {
-	return r.ch
-}
 
 //export goCameraCallback
 func goCameraCallback(mem *C.char, size C.size_t) {
@@ -57,7 +37,7 @@ func goCameraCallback(mem *C.char, size C.size_t) {
 }
 
 type RpiCamera struct {
-	videoFeed *ringBuffer[[]byte]
+	videoFeed *util.RingBuffer[[]byte]
 }
 
 func (rpiCamera *RpiCamera) StartRpiCamera() {
@@ -66,5 +46,7 @@ func (rpiCamera *RpiCamera) StartRpiCamera() {
 
 func CreateRpiCamera() *RpiCamera {
 	rpiCamera = &RpiCamera{}
+	rpiCamera.videoFeed = util.CreateRingBuffer[[]byte](1)
+
 	return rpiCamera
 }
