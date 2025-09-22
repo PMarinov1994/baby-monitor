@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	videoFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](4)
+	videoFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](1)
 	audioFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](1)
 
 	conClients uint8       = 0

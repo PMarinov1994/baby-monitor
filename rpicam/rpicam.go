@@ -33,11 +33,11 @@ func goCameraCallback(mem *C.char, size C.size_t) {
 	copyBuf := make([]byte, len(buf))
 	copy(copyBuf, buf)
 
-	rpiCamera.videoFeed.Push(copyBuf)
+	rpiCamera.VideoFeed.Push(copyBuf)
 }
 
 type RpiCamera struct {
-	videoFeed *util.RingBuffer[[]byte]
+	VideoFeed *util.RingBuffer[[]byte]
 }
 
 func (rpiCamera *RpiCamera) StartRpiCamera() {
@@ -46,7 +46,7 @@ func (rpiCamera *RpiCamera) StartRpiCamera() {
 
 func CreateRpiCamera() *RpiCamera {
 	rpiCamera = &RpiCamera{}
-	rpiCamera.videoFeed = util.CreateRingBuffer[[]byte](1)
+	rpiCamera.VideoFeed = util.CreateRingBuffer[[]byte](1)
 
 	return rpiCamera
 }
