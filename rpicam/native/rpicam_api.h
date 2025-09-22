@@ -1,13 +1,23 @@
 #ifndef __RPICAM_API__H
 #define __RPICAM_API__H
 
+#ifdef __cplusplus
 #include <cstddef>
+#else
+#include <stddef.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef void (*CameraOutputReadyCallback)(char *mem, size_t size);
 
-#ifndef __cplusplus
-extern "C"
-#endif
 int startCamera(CameraOutputReadyCallback cb_info);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __RPICAM_API__H

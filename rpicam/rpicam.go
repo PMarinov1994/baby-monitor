@@ -1,16 +1,11 @@
 package rpicam
 
 /*
-#cgo LDFLAGS: -L./_build -lRpiCameraWrapper
-#include "rpicam_api.h"
+#cgo LDFLAGS: -L./native/_build -lRpiCameraWrapper
+#include "native/rpicam_api.h"
 
 // Forward declaration of the Go callback
 extern void goCameraCallback(char* mem, size_t size);
-
-// Bridge function that calls the Go callback
-static inline void bridgeCallback(char* mem, size_t size) {
-    goCameraCallback(mem, size);
-}
 */
 import "C"
 
@@ -40,7 +35,7 @@ type RpiCamera struct {
 }
 
 func (rpiCamera *RpiCamera) StartRpiCamera() {
-	ret := C.startCamera((C.CameraOutputReadyCallback)(C.bridgeCallback))
+	C.startCamera((C.CameraOutputReadyCallback)(C.goCameraCallback))
 }
 
 func CreateRpiCamera() *RpiCamera {
