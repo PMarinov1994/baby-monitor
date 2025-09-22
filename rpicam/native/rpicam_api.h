@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-typedef void (*CameraOutputReadyCallback)(char *mem, size_t size);
+typedef void (*CameraOutputReadyCallback)(unsigned char *mem, size_t size);
 
 int startCamera(CameraOutputReadyCallback cb_info);
 

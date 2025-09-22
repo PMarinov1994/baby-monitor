@@ -91,7 +91,7 @@ func startVideoFeed() {
 		"/dev/video11",
 		width,
 		height,
-		v4l2.PixelFmtYUV410); err != nil {
+		v4l2.PixelFmtYUV420); err != nil {
 		checkError(&err)
 	}
 

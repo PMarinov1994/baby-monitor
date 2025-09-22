@@ -5,5 +5,5 @@ set -e
 mkdir -p _build
 cd _build
 
-cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-ninja
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+cmake --build .

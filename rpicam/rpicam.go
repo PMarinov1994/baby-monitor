@@ -5,7 +5,7 @@ package rpicam
 #include "native/rpicam_api.h"
 
 // Forward declaration of the Go callback
-extern void goCameraCallback(char* mem, size_t size);
+extern void goCameraCallback(unsigned char* mem, size_t size);
 */
 import "C"
 
@@ -20,14 +20,10 @@ var (
 )
 
 //export goCameraCallback
-func goCameraCallback(mem *C.char, size C.size_t) {
-	// Convert memory into Go []byte
+func goCameraCallback(mem *C.uchar, size C.size_t) {
+	// Convert memory into Go []byte. The result is a copy of the memory
 	buf := C.GoBytes(unsafe.Pointer(mem), C.int(size))
-
-	copyBuf := make([]byte, len(buf))
-	copy(copyBuf, buf)
-
-	rpiCamera.VideoFeed.Push(copyBuf)
+	rpiCamera.VideoFeed.Push(buf)
 }
 
 type RpiCamera struct {

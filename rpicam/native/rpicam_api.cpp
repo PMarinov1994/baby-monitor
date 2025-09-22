@@ -15,7 +15,7 @@ static CameraOutputReadyCallback g_cb_info = NULL;
 static void outputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe)
 {
 		if (NULL != g_cb_info)
-			g_cb_info((char*)mem, size);
+			g_cb_info((unsigned char*)mem, size);
 };
 
 // The main even loop for the application.
@@ -56,16 +56,17 @@ int startCamera(CameraOutputReadyCallback cb_info)
 	RPiCamEncoder app;
 	VideoOptions *options = app.GetOptions();
 	
-	const char *argv[] = {
-		"--width", "1280",
-		"--height", "720",
-		"--framerate", "30",
-		"--codec", "yuv420",
-		"--circular"
-	};
-
-	if (options->Parse(sizeof(argv), (char**)argv))
+	const char *argv[] = {};
+	if (options->Parse(0, (char**)argv))
 	{
+		options->Set().codec = "yuv420";
+		options->Set().nopreview = true;
+		options->Set().width = 1280;
+		options->Set().height = 720;
+		options->Set().framerate = 30;
+
+		options->Get().Print();
+
 		// This is a forever loop
 		event_loop(app);
 	}
