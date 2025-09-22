@@ -6,7 +6,7 @@
  */
 
 #include "rpicam_api.h"
-#include "rpicam-apps/core/rpicam_encoder.hpp"
+#include "core/rpicam_encoder.hpp"
 
 using namespace std::placeholders;
 

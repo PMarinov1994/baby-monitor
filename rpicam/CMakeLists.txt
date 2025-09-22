@@ -49,6 +49,7 @@ target_include_directories(${PROJECT_NAME}
         ${LIBCAMERA_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
         ${RPICAM_APP_INCLUDE_DIRS}
+	"/usr/local/include/rpicam-apps" # Hack because we need it and pkg-config does not provide it
 )
 
 # Add compile flags from pkg-config
