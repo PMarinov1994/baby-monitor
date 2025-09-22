@@ -23,7 +23,7 @@ if(NOT Boost_FOUND)
 endif()
 
 pkg_check_modules(RPICAM_APP REQUIRED rpicam_app)
-if(NOT LIBRPICAM_APP_FOUND)
+if(NOT RPICAM_APP_FOUND)
     message(FATAL_ERROR "rpicam_app not found")
 endif()
 
