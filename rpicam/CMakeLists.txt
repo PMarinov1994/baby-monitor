@@ -22,8 +22,8 @@ if(NOT Boost_FOUND)
     message(FATAL_ERROR "Boost program_options not found")
 endif()
 
-pkg_check_modules(RPICAM_APP REQUIRED librpicam_app)
-if(NOT LIBRPICAM_APP)
+pkg_check_modules(RPICAM_APP REQUIRED rpicam_app)
+if(NOT LIBRPICAM_APP_FOUND)
     message(FATAL_ERROR "rpicam_app not found")
 endif()
 
