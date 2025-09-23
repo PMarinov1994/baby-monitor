@@ -251,42 +251,33 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 }
 
 func sendAudioPkgs(audioTrack *webrtc.TrackLocalStaticSample) {
-	for pkg := range audioPkgs.Read() {
-		if writeErr := audioTrack.WriteSample(*pkg); writeErr != nil {
+	for audioData := range audioFrames.Read() {
+		now := time.Now()
+
+		audioPkg := media.Sample{
+			Data:      audioData,
+			Duration:  opusFrameDuration,
+			Timestamp: now,
+		}
+
+		if writeErr := audioTrack.WriteSample(audioPkg); writeErr != nil {
 			checkError(&writeErr)
 		}
 	}
 }
 
 func sendVideoPkgs(videoTrack *webrtc.TrackLocalStaticSample) {
-	for pkg := range videoPkgs.Read() {
-		if writeErr := videoTrack.WriteSample(*pkg); writeErr != nil {
-			checkError(&writeErr)
-		}
-	}
-}
-
-func createPkgs() {
-	for {
-
-		audioData := <-audioFrames.Read()
-		videoData := <-videoFrames.Read()
-
+	for videoData := range videoFrames.Read() {
 		now := time.Now()
 
-		audioPkg := &media.Sample{
-			Data:      audioData,
-			Duration:  opusFrameDuration,
-			Timestamp: now,
-		}
-
-		videoPkg := &media.Sample{
+		videoPkg := media.Sample{
 			Data:      videoData,
 			Duration:  h264FrameDuration,
 			Timestamp: now,
 		}
 
-		audioPkgs.Push(audioPkg)
-		videoPkgs.Push(videoPkg)
+		if writeErr := videoTrack.WriteSample(videoPkg); writeErr != nil {
+			checkError(&writeErr)
+		}
 	}
 }

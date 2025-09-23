@@ -51,7 +51,6 @@ func main() {
 	<-chVideoRdy
 	log.Printf("Video Ready!")
 
-	go createPkgs()
 	go sendAudioPkgs(audioTrack)
 	go sendVideoPkgs(videoTrack)
 
