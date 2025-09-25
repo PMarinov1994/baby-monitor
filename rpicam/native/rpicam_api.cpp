@@ -10,67 +10,60 @@
 
 using namespace std::placeholders;
 
-static CameraOutputReadyCallback g_cb_info = NULL;
+static CameraOutputReadyCallback g_yuv420_cb = NULL;
 
 static void outputReady(void *mem, size_t size, int64_t timestamp_us, bool keyframe)
 {
-		if (NULL != g_cb_info)
-			g_cb_info((unsigned char*)mem, size);
+		if (NULL != g_yuv420_cb)
+			g_yuv420_cb((unsigned char*)mem, size);
 };
-
-// The main even loop for the application.
-static void event_loop(RPiCamEncoder &app)
-{
-	app.SetEncodeOutputReadyCallback(outputReady);
-
-	app.OpenCamera();
-	app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
-	app.StartEncoder();
-	app.StartCamera();
-
-	while(true)
-	{
-		RPiCamEncoder::Msg msg = app.Wait();
-		if (msg.type == RPiCamApp::MsgType::Timeout)
-		{
-			LOG_ERROR("ERROR: Device timeout detected, attempting a restart!!!");
-			app.StopCamera();
-			app.StartCamera();
-			continue;
-		}
-
-		if (msg.type == RPiCamEncoder::MsgType::Quit)
-			return;
-		else if (msg.type != RPiCamEncoder::MsgType::RequestComplete)
-			throw std::runtime_error("unrecognised message!");
-
-		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
-		app.EncodeBuffer(completed_request, app.VideoStream());
-	}
-}
 
 int startCamera(struct CameraParams *params)
 {
-	g_cb_info = cb_info;
-
 	RPiCamEncoder app;
 	VideoOptions *options = app.GetOptions();
 	
 	const char *argv[] = {};
 	if (options->Parse(0, (char**)argv))
 	{
+		g_yuv420_cb = params->cb_yuv420;
+
 		options->Set().codec = "yuv420";
 		options->Set().nopreview = true;
-		options->Set().width = 1280;
-		options->Set().height = 720;
-		options->Set().framerate = 30;
+		options->Set().width = params->width;
+		options->Set().height = params->height;
+		options->Set().framerate = params->framerate;
 
-		options->Get().Print();
+		if (params->loglevel >= 2)
+			options->Get().Print();
 
-		// This is a forever loop
-		event_loop(app);
+		app.SetEncodeOutputReadyCallback(outputReady);
+
+		app.OpenCamera();
+		app.ConfigureVideo(RPiCamEncoder::FLAG_VIDEO_JPEG_COLOURSPACE);
+		app.StartEncoder();
+		app.StartCamera();
+
+		while(true)
+		{
+			RPiCamEncoder::Msg msg = app.Wait();
+			if (msg.type == RPiCamApp::MsgType::Timeout)
+			{
+				LOG_ERROR("ERROR: Device timeout detected, attempting a restart!!!");
+				app.StopCamera();
+				app.StartCamera();
+				continue;
+			}
+
+			if (msg.type == RPiCamEncoder::MsgType::Quit)
+				return 0;
+			else if (msg.type != RPiCamEncoder::MsgType::RequestComplete)
+				throw std::runtime_error("unrecognised message!");
+
+			CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
+			app.EncodeBuffer(completed_request, app.VideoStream());
+		}
 	}
 
-	// For now, we get here if we cannot parse options
-	return -1;
+	return 0;
 };

@@ -16,9 +16,10 @@ extern "C" {
 typedef void (*CameraOutputReadyCallback)(unsigned char *mem, size_t size);
 
 struct CameraParams {
-	uint32_t width;
-	uint32_t height;
-	uint32_t framerate;
+	uint8_t                   loglevel;
+	uint32_t                  width;
+	uint32_t                  height;
+	uint32_t                  framerate;
 	CameraOutputReadyCallback cb_yuv420;
 	CameraOutputReadyCallback cb_h264;
 };

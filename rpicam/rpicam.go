@@ -27,11 +27,23 @@ func goCameraCallback(mem *C.uchar, size C.size_t) {
 }
 
 type RpiCamera struct {
-	VideoFeed *util.RingBuffer[[]byte]
+	Loglevel      uint8
+	Width, Height uint32
+	Framerate     uint32
+	VideoFeed     *util.RingBuffer[[]byte]
 }
 
-func (rpiCamera *RpiCamera) StartRpiCamera() {
-	C.startCamera((C.CameraOutputReadyCallback)(C.goCameraCallback))
+func (rpiCamera *RpiCamera) StartRpiCamera() int {
+	var params C.struct_CameraParams
+
+	params.loglevel = C.uint8_t(rpiCamera.Loglevel)
+	params.width = C.uint32_t(rpiCamera.Width)
+	params.height = C.uint32_t(rpiCamera.Height)
+	params.framerate = C.uint32_t(rpiCamera.Framerate)
+	params.cb_yuv420 = (C.CameraOutputReadyCallback)(C.goCameraCallback)
+
+	result := C.startCamera(&params)
+	return int(result)
 }
 
 func CreateRpiCamera() *RpiCamera {
