@@ -37,13 +37,7 @@ func main() {
 	//       otherwize no video feed is present
 	createMediaEngine()
 
-	if isVideoSourceAvailable() {
-		log.Printf("Starting video feed.\n")
-		go startVideoFeed()
-	} else {
-		log.Printf("No video feed. Not running on Raspberry Pi.\n")
-	}
-
+	go startVideoFeed()
 	go startAudioFeed()
 
 	<-chAudioRdy

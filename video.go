@@ -117,24 +117,6 @@ func startVideoFeed() {
 	}
 }
 
-func isVideoSourceAvailable() bool {
-	rpicam := exec.Command(
-		"rpicam-vid",
-		"--version",
-	)
-
-	if err := rpicam.Start(); err != nil {
-		return false // executable not found on $PATH
-	}
-
-	state, err := rpicam.Process.Wait()
-	if err != nil {
-		checkError(&err)
-	}
-
-	return state.ExitCode() == 0
-}
-
 // SetPixelYUV420 sets the pixel at (x, y) to black in a YUV420 planar buffer.
 // The frame is modified in-place through the pointer to the byte slice.
 func setPixelYUV420(frame *[]byte, x, y, width, height, hwidth, hhight int) {

@@ -3,6 +3,7 @@
 set -e
 
 # Default values (false)
+DEPS=false
 UI=false
 NCAM=false
 RUN=false
@@ -11,6 +12,7 @@ print_help() {
   echo "Usage: $0 [options]"
   echo
   echo "Options:"
+  echo "  -deps, --dependencies       Enable front-end placeholder"
   echo "  -ui, --front-end            Enable front-end placeholder"
   echo "  -ncam, --native-camera-lib  Enable native camera lib placeholder"
   echo "  -r, --run                   Run the if/else block"
@@ -20,6 +22,10 @@ print_help() {
 # Parse arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -deps|--dependencies)
+      DEPS=true
+      shift
+      ;;
     -ui|--front-end)
       UI=true
       shift
@@ -44,6 +50,32 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if $DEPS; then
+	sudo apt update
+	sudo apt install -y \
+		portaudio19-dev \
+		libasound2-dev \
+		libopus-dev \
+		libopusfile-dev \
+		rpicam-apps \
+		cmake \
+		libboost-program-options-dev \
+		libdrm-dev \
+		libexif-dev \
+		meson \
+		ninja-build
+
+	echo "Installing golang..."
+	wget https://go.dev/dl/go1.25.0.linux-arm64.tar.gz
+	sudo rm -rf /usr/local/go
+	sudo tar -C /usr/local -xzf go1.25.0.linux-arm64.tar.gz
+
+	echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+	source ~/.bashrc
+
+	go version
+fi
+
 # Respond to flags
 if $UI; then
 	pushd ./client/
@@ -62,7 +94,7 @@ if $NCAM; then
 	mkdir -p _build
 	pushd _build
 
-	cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+	cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
 	cmake --build .
 	sudo cmake --install .
 
