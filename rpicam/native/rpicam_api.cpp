@@ -49,7 +49,7 @@ static void event_loop(RPiCamEncoder &app)
 	}
 }
 
-int startCamera(CameraOutputReadyCallback cb_info)
+int startCamera(struct CameraParams *params)
 {
 	g_cb_info = cb_info;
 
