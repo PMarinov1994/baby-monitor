@@ -1,13 +1,9 @@
 package main
 
 import (
-	"encoding/binary"
-	"fmt"
-	"io"
-	"log"
-	"os/exec"
 	"time"
 
+	"github.com/gordonklaus/portaudio"
 	"gopkg.in/hraban/opus.v2"
 )
 
@@ -24,54 +20,55 @@ var (
 )
 
 func startAudioFeed() {
-	// arecord -D hw:Zero,0 -c 2 -r 44100 -f S16_LE | ffmpeg -f s16le -ac 2 -ar 44100 -i - -ar 48000 -f s16le -
-	//	arecord
-	arecord := exec.Command(
-		"arecord",
-		// "-D", "hw:Zero,0", // TODO: handle the rpi sound card?
-		"-c", fmt.Sprint(channels),
-		"-r", fmt.Sprint(sampleRate),
-		"-f", "S16_LE",
-		"-q",
-	)
-
-	stdout, err := arecord.StdoutPipe()
-	if err != nil {
-		panic(err)
-	}
-
-	log.Printf("starting: %s\n", arecord.String())
-	if err := arecord.Start(); err != nil {
+	if err := portaudio.Initialize(); err != nil {
 		checkError(&err)
 	}
 
-	defer arecord.Process.Kill()
+	defer portaudio.Terminate()
+
+	do, err := portaudio.DefaultInputDevice()
+	if err != nil {
+		checkError(&err)
+	}
+
+	inParams := portaudio.StreamParameters{
+		Input: portaudio.StreamDeviceParameters{
+			Device:   do,
+			Channels: channels,
+			Latency:  do.DefaultLowInputLatency,
+		},
+		SampleRate:      sampleRate,
+		FramesPerBuffer: frameSize * channels,
+	}
+
+	buffer := make([]int16, frameSize*channels)
+	packet := make([]byte, 4000)
+
+	istream, err := portaudio.OpenStream(inParams, buffer)
+	if err != nil {
+		checkError(&err)
+	}
+
+	if err != istream.Start() {
+		checkError(&err)
+	}
+
+	defer istream.Close()
 
 	encoder, err := opus.NewEncoder(sampleRate, channels, opus.AppAudio)
 	if err != nil {
 		checkError(&err)
 	}
 
-	// Buffers
-	pcm := make([]int16, frameSize*channels) // float32 PCM samples
-	pcmBytes := make([]byte, len(pcm)*2)     // raw PCM bytes (2 bytes per sample)
-	packet := make([]byte, 4000)             // encoded packet buffer
-
 	close(chAudioRdy)
 	for {
 		// Read exactly one frame worth of PCM
-		if _, err := io.ReadFull(stdout, pcmBytes); err != nil {
+		if err := istream.Read(); err != nil {
 			checkError(&err)
 		}
 
-		// Convert byte PCM to int16 samples
-		for i := range pcm {
-			// Convert 2 bytes to int16 (little-endian)
-			pcm[i] = int16(binary.LittleEndian.Uint16(pcmBytes[i*2:]))
-		}
-
 		// Encode to Opus
-		n, err := encoder.Encode(pcm, packet)
+		n, err := encoder.Encode(buffer, packet)
 		if err != nil {
 			checkError(&err)
 		}

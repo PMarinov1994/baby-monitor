@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"githug.com/pmarinov1994/baby-monitor/mic"
+	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
 const (
@@ -12,8 +13,8 @@ const (
 )
 
 var (
-	videoFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
-	audioFrames *ringBuffer[[]byte] = createRingBuffer[[]byte](1)
+	videoFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](1)
+	audioFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](1)
 
 	conClients uint8       = 0
 	wsClients  []*WsClient = make([]*WsClient, MAX_CONNECTED_CLIENT)
@@ -36,13 +37,7 @@ func main() {
 	//       otherwize no video feed is present
 	createMediaEngine()
 
-	if isVideoSourceAvailable() {
-		log.Printf("Starting video feed.\n")
-		go startVideoFeed()
-	} else {
-		log.Printf("No video feed. Not running on Raspberry Pi.\n")
-	}
-
+	go startVideoFeed()
 	go startAudioFeed()
 
 	<-chAudioRdy
@@ -50,7 +45,6 @@ func main() {
 	<-chVideoRdy
 	log.Printf("Video Ready!")
 
-	go createPkgs()
 	go sendAudioPkgs(audioTrack)
 	go sendVideoPkgs(videoTrack)
 

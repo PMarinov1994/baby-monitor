@@ -30,6 +30,7 @@ require (
 
 require (
 	github.com/google/uuid v1.6.0
+	github.com/gordonklaus/portaudio v0.0.0-20250206071425-98a94950218b
 	github.com/pion/interceptor v0.1.40
 	github.com/pion/webrtc/v4 v4.1.3
 	github.com/vladimirvivien/go4vl v0.0.5

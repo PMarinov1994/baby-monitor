@@ -1,15 +1,12 @@
 package main
 
 import (
-	"context"
 	"io"
 	"log"
-	"os"
-	"os/exec"
 	"time"
 
-	"github.com/vladimirvivien/go4vl/device"
 	"github.com/vladimirvivien/go4vl/v4l2"
+	"githug.com/pmarinov1994/baby-monitor/rpicam"
 )
 
 const (
@@ -81,55 +78,15 @@ func (reader *streamYUVReader) Read() ([]byte, error) {
 }
 
 func startVideoFeed() {
-	device, err := device.Open(
-		"/dev/video0",
-		device.WithVideoCaptureEnabled(),
-		device.WithBufferSize(1),
-	)
-	if err != nil {
-		checkError(&err)
-	}
 
-	pixFmt, err := device.GetPixFormat()
-	if err != nil {
-		checkError(&err)
-	}
-
-	pixFmt.Width = width
-	pixFmt.Height = height
-	pixFmt.PixelFormat = v4l2.PixelFmtSRGGB10
-
-	if err := device.SetPixFormat(pixFmt); err != nil {
-		checkError(&err)
-	}
-
-	log.Printf("Pixel Format: %v\n", pixFmt)
-
-	cropCpb, err := device.GetCropCapability()
-	if err != nil {
-		checkError(&err)
-	}
-
-	log.Printf("Crop Capability: %v\n", cropCpb)
-
-	ctx := context.Background()
-	device.Start(ctx)
-	log.Println("StreamOn was successfull")
-
-	var isp ISP
-	if err := isp.Init(
-		"/dev/video12",
-		width,
-		height,
-		v4l2.PixelFmtSRGGB10,
-		v4l2.PixelFmtYUV410); err != nil {
-		checkError(&err)
-	}
+	rpiCam := rpicam.CreateRpiCamera()
+	rpiCam.Width = width
+	rpiCam.Height = height
+	rpiCam.Framerate = targetFPS
+	rpiCam.Loglevel = 2
 
 	go func() {
-		for {
-			isp.ProcessFrame()
-		}
+		rpiCam.StartRpiCamera()
 	}()
 
 	var encoder Encoder
@@ -137,7 +94,7 @@ func startVideoFeed() {
 		"/dev/video11",
 		width,
 		height,
-		v4l2.PixelFmtYUV410); err != nil {
+		v4l2.PixelFmtYUV420); err != nil {
 		checkError(&err)
 	}
 
@@ -148,54 +105,16 @@ func startVideoFeed() {
 	}()
 
 	close(chVideoRdy)
-	// File path
-	filePath := "output.raw"
 
-	for rawFrame := range device.GetOutput() {
-		// Check if file exists
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			// File doesn't exist, so write the byte array
-			err := os.WriteFile(filePath, rawFrame, 0644)
-			if err != nil {
-				checkError(&err)
-			}
-			log.Printf("Successfully wrote to %s\n", filePath)
-		} else if err != nil {
-			// Handle other potential errors from os.Stat
-			checkError(&err)
-		}
-
-		// Feed raw frame to image signal processor (ISP)
-		isp.inFrameCh <- rawFrame
-		// Get process image
-		processedFrame := <-isp.outFrameCh
-
+	for rawFrame := range rpiCam.VideoFeed.Read() {
 		// Feed the encoder
-		encoder.rawFrameCh <- processedFrame
+		encoder.rawFrameCh <- rawFrame
 		// Get frame
 		encodedFrame := <-encoder.encodedFrameCh
 
 		// Push frame to packetizer
 		videoFrames.Push(encodedFrame)
 	}
-}
-
-func isVideoSourceAvailable() bool {
-	rpicam := exec.Command(
-		"rpicam-vid",
-		"--version",
-	)
-
-	if err := rpicam.Start(); err != nil {
-		return false // executable not found on $PATH
-	}
-
-	state, err := rpicam.Process.Wait()
-	if err != nil {
-		checkError(&err)
-	}
-
-	return state.ExitCode() == 0
 }
 
 // SetPixelYUV420 sets the pixel at (x, y) to black in a YUV420 planar buffer.

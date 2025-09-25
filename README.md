@@ -16,6 +16,7 @@ sudo ln -s /lib/systemd/system/getty@.service getty@ttyGS0.service
 ```
 
 ### Dependencies
+- portaudio19-dev
 - libasound2-dev
 - libopus-dev
 - libopusfile-dev
@@ -83,7 +84,7 @@ dtoverlay=imx477,media-controller=0 # Disable media-controller to allow v4l2 to 
 ## Development dependencies
 - Common
 ```
-sudo apt install -y xterm git vim
+sudo apt install -y xterm git vim xclip
 ```
 
 - golang >=1.24
@@ -111,6 +112,11 @@ fnm install 22
 - Get the project
 ```
 git clone https://github.com/PMarinov1994/baby-monitor.git
+```
+
+- ssh with clipboard support
+```
+ssh -X -Y <remote hostname>
 ```
 
 ## Performance tests
