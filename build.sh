@@ -62,8 +62,9 @@ if $NCAM; then
 	mkdir -p _build
 	pushd _build
 
-	cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+	cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
 	cmake --build .
+	sudo cmake --install .
 
 	popd
 	popd

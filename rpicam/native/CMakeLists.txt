@@ -33,7 +33,7 @@ set(SOURCES
 )
 
 # Create the shared library in the current directory
-add_library(${PROJECT_NAME} STATIC ${SOURCES})
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 # Link dependencies
 target_link_libraries(${PROJECT_NAME}
@@ -57,4 +57,10 @@ target_compile_options(${PROJECT_NAME}
     PRIVATE
         ${LIBCAMERA_CFLAGS_OTHER}
         ${RPICAM_APP_CFLAGS_OTHER}
+)
+
+include(GNUInstallDirs)
+
+install(TARGETS ${PROJECT_NAME}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
 )
