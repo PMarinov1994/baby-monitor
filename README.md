@@ -16,6 +16,7 @@ sudo ln -s /lib/systemd/system/getty@.service getty@ttyGS0.service
 ```
 
 ### Dependencies
+- portaudio19-dev
 - libasound2-dev
 - libopus-dev
 - libopusfile-dev
