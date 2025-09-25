@@ -33,7 +33,7 @@ set(SOURCES
 )
 
 # Create the shared library in the current directory
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 # Link dependencies
 target_link_libraries(${PROJECT_NAME}

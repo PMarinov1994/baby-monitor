@@ -1,7 +1,7 @@
 package rpicam
 
 /*
-#cgo LDFLAGS: -L./native/_build -lRpiCameraWrapper
+#cgo LDFLAGS: ./native/_build/libRpiCameraWrapper.a
 #include "native/rpicam_api.h"
 
 // Forward declaration of the Go callback
