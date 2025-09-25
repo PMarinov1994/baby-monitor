@@ -3,7 +3,6 @@ package main
 import (
 	"io"
 	"log"
-	"os/exec"
 	"time"
 
 	"github.com/vladimirvivien/go4vl/v4l2"
@@ -84,6 +83,7 @@ func startVideoFeed() {
 	rpiCam.Width = width
 	rpiCam.Height = height
 	rpiCam.Framerate = targetFPS
+	rpiCam.Loglevel = 2
 
 	go func() {
 		rpiCam.StartRpiCamera()
