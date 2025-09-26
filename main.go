@@ -27,7 +27,7 @@ func main() {
 	sc, err := mic.EnumSoundCards()
 	if err != nil {
 		log.Printf("Failed to enumerate sound card. Reason: %s\n", err)
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	soundCards = sc

@@ -1,5 +1,10 @@
 package util
 
+import (
+	"log"
+	"runtime/debug"
+)
+
 type RingBuffer[T any] struct {
 	ch chan T
 }
@@ -21,4 +26,11 @@ func (r *RingBuffer[T]) Push(data T) {
 
 func (r *RingBuffer[T]) Read() <-chan T {
 	return r.ch
+}
+
+func CheckError(err *error) {
+	if *err != nil {
+		debug.PrintStack()
+		log.Fatalf("Error: %v\n", *err)
+	}
 }

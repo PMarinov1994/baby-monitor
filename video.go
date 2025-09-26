@@ -7,6 +7,7 @@ import (
 
 	"github.com/vladimirvivien/go4vl/v4l2"
 	"githug.com/pmarinov1994/baby-monitor/rpicam"
+	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
 const (
@@ -25,6 +26,9 @@ const (
 	targetFPS = 25
 
 	h264FrameDuration = time.Duration(time.Second / targetFPS)
+
+	hwidth  = width / 2
+	hheight = height / 2
 )
 
 var (
@@ -95,7 +99,7 @@ func startVideoFeed() {
 		width,
 		height,
 		v4l2.PixelFmtYUV420); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	go func() {
@@ -107,6 +111,9 @@ func startVideoFeed() {
 	close(chVideoRdy)
 
 	for rawFrame := range rpiCam.VideoFeed.Read() {
+		// Apply overlay
+		applyOverlay(&rawFrame)
+
 		// Feed the encoder
 		encoder.rawFrameCh <- rawFrame
 		// Get frame
@@ -115,29 +122,6 @@ func startVideoFeed() {
 		// Push frame to packetizer
 		videoFrames.Push(encodedFrame)
 	}
-}
-
-// SetPixelYUV420 sets the pixel at (x, y) to black in a YUV420 planar buffer.
-// The frame is modified in-place through the pointer to the byte slice.
-func setPixelYUV420(frame *[]byte, x, y, width, height, hwidth, hhight int) {
-	if x < 0 || x >= width || y < 0 || y >= height {
-		return // out of bounds
-	}
-
-	yPlaneSize := width * height
-	uvPlaneSize := (hwidth) * (hhight)
-
-	buf := *frame
-
-	// Set Y (luma) to black
-	yIndex := y*width + x
-	buf[yIndex] = 0
-
-	// Set U and V (chroma) to neutral (128)
-	uIndex := yPlaneSize + (y/2)*(width/2) + (x / 2)
-	vIndex := yPlaneSize + uvPlaneSize + (y/2)*(hwidth) + (x / 2)
-	buf[uIndex] = 128
-	buf[vIndex] = 128
 }
 
 func logCtrlInfo(fd uintptr) {
@@ -153,7 +137,7 @@ func logCtrlInfo(fd uintptr) {
 
 	extCtrls, err := v4l2.QueryAllExtControls(fd)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	log.Println("-> ExtControls")

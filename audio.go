@@ -1,9 +1,11 @@
 package main
 
 import (
+	"math"
 	"time"
 
 	"github.com/gordonklaus/portaudio"
+	"githug.com/pmarinov1994/baby-monitor/util"
 	"gopkg.in/hraban/opus.v2"
 )
 
@@ -21,14 +23,14 @@ var (
 
 func startAudioFeed() {
 	if err := portaudio.Initialize(); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	defer portaudio.Terminate()
 
 	do, err := portaudio.DefaultInputDevice()
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	inParams := portaudio.StreamParameters{
@@ -46,31 +48,54 @@ func startAudioFeed() {
 
 	istream, err := portaudio.OpenStream(inParams, buffer)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	if err != istream.Start() {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	defer istream.Close()
 
 	encoder, err := opus.NewEncoder(sampleRate, channels, opus.AppAudio)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
+
+	sampleData := util.CreateRingBuffer[[]int16](1)
+	go func() {
+		for data := range sampleData.Read() {
+			sumSquares := 0.0
+			for _, sample := range data {
+				norm := float64(sample) / math.MaxInt16
+				sumSquares += norm * norm
+			}
+
+			meanSquares := sumSquares / float64(len(data))
+			rms := math.Sqrt(meanSquares)
+
+			db := -96.0
+			if rms >= 1e-9 {
+				db = 20.0 * math.Log10(rms)
+			}
+
+			dbPerFrame.Push(db)
+		}
+	}()
 
 	close(chAudioRdy)
 	for {
 		// Read exactly one frame worth of PCM
 		if err := istream.Read(); err != nil {
-			checkError(&err)
+			util.CheckError(&err)
 		}
+
+		sampleData.Push(buffer)
 
 		// Encode to Opus
 		n, err := encoder.Encode(buffer, packet)
 		if err != nil {
-			checkError(&err)
+			util.CheckError(&err)
 		}
 
 		packet = packet[:n]

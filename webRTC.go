@@ -49,7 +49,7 @@ func createMediaEngine() {
 		},
 		PayloadType: h264PayloadType,
 	}, webrtc.RTPCodecTypeVideo); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	if err := mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
@@ -71,7 +71,7 @@ func createMediaEngine() {
 
 	// Use the default set of Interceptors
 	if err := webrtc.RegisterDefaultInterceptors(mediaEngine, interceptorRegistry); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	// Create the API object with the MediaEngine
@@ -85,14 +85,14 @@ func createMediaEngine() {
 		ClockRate: h264ClockRate,
 	}, "video", "pion")
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	at, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{
 		MimeType: webrtc.MimeTypeOpus,
 	}, "audio", "pion")
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	videoTrack = vt
@@ -110,27 +110,27 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	clientOffer := webrtc.SessionDescription{}
 	if err := json.Unmarshal(body, &clientOffer); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	// Create a new RTCPeerConnection
 	peerConnection, err := api.NewPeerConnection(config)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	// Add this newly created track to the PeerConnection
 	if _, err := peerConnection.AddTrack(videoTrack); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	if _, err := peerConnection.AddTrack(audioTrack); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	// Read incoming RTCP packets
@@ -210,19 +210,19 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 
 	// Set the remote SessionDescription
 	if err = peerConnection.SetRemoteDescription(clientOffer); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	// Create answer
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	// Sets the LocalDescription, and starts our UDP listeners
 	// This will trigger the ICE Candidate gathering
 	if err = peerConnection.SetLocalDescription(answer); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	log.Println("Waiting for gathering to complete...")
@@ -236,13 +236,13 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 
 	msg, err := json.Marshal(response)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	res.Header().Set("Content-Type", "application/json")
 	send, err := res.Write(msg)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	if send != len(msg) {
@@ -261,7 +261,7 @@ func sendAudioPkgs(audioTrack *webrtc.TrackLocalStaticSample) {
 		}
 
 		if writeErr := audioTrack.WriteSample(audioPkg); writeErr != nil {
-			checkError(&writeErr)
+			util.CheckError(&writeErr)
 		}
 	}
 }
@@ -277,7 +277,7 @@ func sendVideoPkgs(videoTrack *webrtc.TrackLocalStaticSample) {
 		}
 
 		if writeErr := videoTrack.WriteSample(videoPkg); writeErr != nil {
-			checkError(&writeErr)
+			util.CheckError(&writeErr)
 		}
 	}
 }

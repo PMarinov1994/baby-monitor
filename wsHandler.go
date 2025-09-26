@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v4"
 	"githug.com/pmarinov1994/baby-monitor/mic"
+	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
 type WsClient struct {
@@ -60,11 +61,11 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		if err := client.ws.Close(); err != nil {
-			checkError(&err)
+			util.CheckError(&err)
 		}
 
 		if err := client.peerConnection.Close(); err != nil {
-			checkError(&err)
+			util.CheckError(&err)
 		}
 
 		conClients--
@@ -75,7 +76,7 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 
 	if conClients >= MAX_CONNECTED_CLIENT {
 		if err := ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil, "No client spots left")); err != nil {
-			checkError(&err)
+			util.CheckError(&err)
 		}
 		log.Printf("Rejecting WebSocket Upgrade\n")
 		return
@@ -122,7 +123,7 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 func createSoundCardsRequest() []byte {
 	jsonData, err := json.Marshal(soundCards)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	resHeaderLen := len(RES_SOUND_CARDS)
@@ -140,7 +141,7 @@ func createSoundCardsRequest() []byte {
 func processGetSoundCardsReq(ws *websocket.Conn) {
 	response := createSoundCardsRequest()
 	if err := ws.WriteMessage(websocket.TextMessage, response); err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 }
 

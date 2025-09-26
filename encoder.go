@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/vladimirvivien/go4vl/v4l2"
+	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
 const (
@@ -29,7 +30,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 
 	encoder.fd, err = v4l2.OpenDevice(dev, os.O_RDWR, 0)
 	if err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
@@ -43,7 +44,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 
 	outFmtMPlane, err := v4l2.GetPixFormatMPlane(encoder.fd, v4l2.BufTypeVideoOutputMPlane)
 	if err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
@@ -52,13 +53,13 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 	outFmtMPlane.PixelFormat = fmt
 
 	if err := v4l2.SetPixFormatMPlane(encoder.fd, outFmtMPlane, v4l2.BufTypeVideoOutputMPlane); err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
 	capFmtMplane, err := v4l2.GetPixFormatMPlane(encoder.fd, v4l2.BufTypeVideoCaptureMPlane)
 	if err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
@@ -67,7 +68,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 	capFmtMplane.PixelFormat = v4l2.PixelFmtH264
 
 	if err := v4l2.SetPixFormatMPlane(encoder.fd, capFmtMplane, v4l2.BufTypeVideoCaptureMPlane); err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
@@ -80,14 +81,14 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 
 	outReqBuf, err := v4l2.InitBuffers(encoder.outputDev) // VIDIOC_REQBUFS
 	if err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
 	encoder.outputDev.output = make(chan []byte, outReqBuf.Count)
 	encoder.outputDev.buffers, err = v4l2.MapMemoryBuffers(encoder.outputDev) // mmap
 	if err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
@@ -100,34 +101,34 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 
 	capReqBuf, err := v4l2.InitBuffers(encoder.capDev) // VIDIOC_REQBUFS
 	if err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
 	encoder.capDev.output = make(chan []byte, capReqBuf.Count)
 	encoder.capDev.buffers, err = v4l2.MapMemoryBuffers(encoder.capDev) // mmap
 	if err != nil {
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
 	if _, err := v4l2.QueueBuffer(encoder.outputDev, 0, 0); err != nil { // VIDIOC_QBUF
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
 	if _, err := v4l2.QueueBuffer(encoder.capDev, 0, 0); err != nil { // VIDIOC_QBUF
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
 	if err := v4l2.StreamOn(encoder.outputDev); err != nil { // VIDIOC_STREAMON
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
 	if err := v4l2.StreamOn(encoder.capDev); err != nil { // VIDIOC_STREAMON
-		checkError(&err) // TODO: Remove
+		util.CheckError(&err) // TODO: Remove
 		return err
 	}
 
@@ -139,19 +140,19 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 
 func (encoder *Encoder) ProcessFrame() {
 	if _, err := v4l2.DequeueBuffer(encoder.outputDev); err != nil { // VIDIOC_DQBUF
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	frame := <-encoder.rawFrameCh
 
 	n := copy(encoder.outputDev.buffers[0], frame)
 	if _, err := v4l2.QueueBuffer(encoder.outputDev, 0, uint32(n)); err != nil { // VIDIOC_QBUF
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	encodedBuf, err := v4l2.DequeueBuffer(encoder.capDev) // VIDIOC_DQBUF
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	encodedFrame := make([]byte, encodedBuf.Info.Planes[0].BytesUsed)
@@ -159,7 +160,7 @@ func (encoder *Encoder) ProcessFrame() {
 	encoder.encodedFrameCh <- encodedFrame
 
 	if _, err := v4l2.QueueBuffer(encoder.capDev, 0, 0); err != nil { // VIDIOC_QBUF
-		checkError(&err)
+		util.CheckError(&err)
 	}
 }
 
@@ -173,7 +174,7 @@ func (encoder *Encoder) Close() {
 func (encoder *Encoder) LogCtrlInfo() {
 	ctrls, err := v4l2.QueryAllControls(encoder.fd)
 	if err != nil {
-		checkError(&err)
+		util.CheckError(&err)
 	}
 
 	log.Println("-> Controls")
