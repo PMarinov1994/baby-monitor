@@ -64,8 +64,16 @@ func drawLine(frame *[]byte, fromX, fromY, toX, toY, w, h, hw, hh int) {
 		yDir = -1
 	}
 
-	for x, y := fromX, fromY; x == toX && y == toY; x, y = x+xDir, y+yDir {
+	for x, y := fromX, fromY; x != toX && y != toY; {
 		setPixelYUV420(frame, x, y, w, h, hw, hh)
+
+		if x != toX {
+			x += xDir
+		}
+
+		if y != toY {
+			y = +yDir
+		}
 	}
 }
 
