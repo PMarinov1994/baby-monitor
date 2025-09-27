@@ -9,14 +9,10 @@ type OverlayData struct {
 	uVal, vVal int8
 }
 
-const (
-	pixelBin = 4
-)
-
 var (
 	dbPerFrame = util.CreateRingBuffer[float64](1)
 
-	dbFrameOverlay     = make([]float64, width/pixelBin)
+	dbFrameOverlay     = make([]float64, width)
 	dbFrameOverlayHead = 0
 )
 
@@ -32,9 +28,11 @@ func applyOverlay(frame *[]byte) {
 	default:
 	}
 
+	lastX, lastY := 0, 0
+
 	// Scufed do ... while(...) {...}
 	firstLoop := true
-	for x, i := 0, dbFrameOverlayHead; ; x, i = x+(pixelBin/2), i+1 {
+	for x, i := 0, dbFrameOverlayHead; ; x, i = x+1, i+1 {
 		if i == len(dbFrameOverlay) {
 			i = 0
 		}
@@ -46,14 +44,28 @@ func applyOverlay(frame *[]byte) {
 		db := dbFrameOverlay[i]
 		y := hheight - int(db)
 
-		for j := x; j < x+pixelBin; j++ {
-			for k := y - 1; k < y-1+pixelBin; k++ {
-				setPixelYUV420(frame, j, k, width, height, hwidth, hheight)
-			}
-		}
+		drawLine(frame, lastX, lastY, x, y, width, height, hwidth, hheight)
+		lastX = x
+		lastY = y
 
 		// We are no longer in first loop
 		firstLoop = false
+	}
+}
+
+func drawLine(frame *[]byte, fromX, fromY, toX, toY, w, h, hw, hh int) {
+	xDir := 1
+	if fromX > toX {
+		xDir = -1
+	}
+
+	yDir := 1
+	if fromY > toY {
+		yDir = -1
+	}
+
+	for x, y := fromX, fromY; x == toX && y == toY; x, y = x+xDir, y+yDir {
+		setPixelYUV420(frame, x, y, w, h, hw, hh)
 	}
 }
 
