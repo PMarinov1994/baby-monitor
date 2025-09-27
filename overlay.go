@@ -13,23 +13,39 @@ var (
 	dbPerFrame = util.CreateRingBuffer[float64](1)
 
 	dbFrameOverlay     = make([]float64, width)
-	dbFrameOverlayHead = len(dbFrameOverlay) - 1
+	dbFrameOverlayHead = 0
 )
 
 func applyOverlay(frame *[]byte) {
 	select {
 	case db := <-dbPerFrame.Read():
 		dbFrameOverlay[dbFrameOverlayHead] = db
-		dbFrameOverlayHead -= 1
-		if dbFrameOverlayHead < 0 {
-			dbFrameOverlayHead = len(dbFrameOverlay) - 1
+		dbFrameOverlayHead++
+
+		if dbFrameOverlayHead == len(dbFrameOverlay) {
+			dbFrameOverlayHead = 0
 		}
 	default:
 	}
 
-	for x, db := range dbFrameOverlay {
+	// Scufed do ... while(...) {...}
+	firstLoop := true
+	for x, i := 0, dbFrameOverlayHead; ; x, i = x+1, i+1 {
+		if i == len(dbFrameOverlay) {
+			i = 0
+		}
+
+		if !firstLoop && i == dbFrameOverlayHead {
+			break
+		}
+
+		db := dbFrameOverlay[i]
 		y := hheight - int(db)
+
 		setPixelYUV420(frame, x, y, width, height, hwidth, hheight)
+
+		// We are no longer in first loop
+		firstLoop = false
 	}
 }
 
