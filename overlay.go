@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
@@ -9,11 +11,29 @@ type OverlayData struct {
 	uVal, vVal int8
 }
 
-var (
-	dbPerFrame = util.CreateRingBuffer[float64](1)
+const (
+	// The width of the overlay is calculated based on the picture width
+	// divided by this number
+	overlayWidthDivider = 2
 
-	dbFrameOverlay     = make([]float64, width/2)
+	// Overlay pixel size will take this much picture pixels
+	pixelSize = 3
+
+	// The amount of acceptable overlay updates per frame
+	// that we are ok to be skipped. Any more than this number
+	// and we will panic, terminating the program.
+	overlayUpdateSkips = 100
+)
+
+var (
+	// NOTE: Race condition will hapen at some point, if not enough data is fed
+	//       to the channel.
+	dbPerFrame = util.CreateRingBuffer[float64](4)
+
+	dbFrameOverlay     = make([]float64, width/overlayWidthDivider)
 	dbFrameOverlayHead = 0
+
+	skippedOverlay uint64 = 0
 )
 
 func applyOverlay(frame *[]byte) {
@@ -25,12 +45,19 @@ func applyOverlay(frame *[]byte) {
 		if dbFrameOverlayHead == len(dbFrameOverlay) {
 			dbFrameOverlayHead = 0
 		}
+
+		skippedOverlay = 0
 	default:
+		skippedOverlay++
+	}
+
+	if skippedOverlay > overlayUpdateSkips {
+		panic(fmt.Sprintf("Skipped overlay new data: %d\n", skippedOverlay))
 	}
 
 	lastX, lastY := 0, 0
 
-	// Scufed do ... while(...) {...}
+	// Scuffed do ... while(...) {...}
 	firstLoop := true
 	for x, i := 0, dbFrameOverlayHead; ; x, i = x+1, i+1 {
 		if i == len(dbFrameOverlay) {
@@ -65,7 +92,7 @@ func drawLine(frame *[]byte, fromX, fromY, toX, toY, w, h, hw, hh int) {
 	}
 
 	for x, y := fromX, fromY; x != toX || y != toY; {
-		drawDot(frame, x, y, 2, w, h, hw, hh)
+		drawDot(frame, x, y, pixelSize, w, h, hw, hh)
 
 		if x != toX {
 			x += xDir
