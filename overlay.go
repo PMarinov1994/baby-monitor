@@ -9,10 +9,14 @@ type OverlayData struct {
 	uVal, vVal int8
 }
 
+const (
+	pixelBin = 4
+)
+
 var (
 	dbPerFrame = util.CreateRingBuffer[float64](1)
 
-	dbFrameOverlay     = make([]float64, width)
+	dbFrameOverlay     = make([]float64, width/pixelBin)
 	dbFrameOverlayHead = 0
 )
 
@@ -30,7 +34,7 @@ func applyOverlay(frame *[]byte) {
 
 	// Scufed do ... while(...) {...}
 	firstLoop := true
-	for x, i := 0, dbFrameOverlayHead; ; x, i = x+1, i+1 {
+	for x, i := 0, dbFrameOverlayHead; ; x, i = x+(pixelBin/2), i+1 {
 		if i == len(dbFrameOverlay) {
 			i = 0
 		}
@@ -42,7 +46,11 @@ func applyOverlay(frame *[]byte) {
 		db := dbFrameOverlay[i]
 		y := hheight - int(db)
 
-		setPixelYUV420(frame, x, y, width, height, hwidth, hheight)
+		for j := x; j < x+pixelBin; j++ {
+			for k := y - 1; k < y-1+pixelBin; k++ {
+				setPixelYUV420(frame, j, k, width, height, hwidth, hheight)
+			}
+		}
 
 		// We are no longer in first loop
 		firstLoop = false

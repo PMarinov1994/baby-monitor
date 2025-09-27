@@ -40,13 +40,13 @@ func main() {
 	go startVideoFeed()
 	go startAudioFeed()
 
+	go sendAudioPkgs(audioTrack)
+	go sendVideoPkgs(videoTrack)
+
 	<-chAudioRdy
 	log.Printf("Audio Ready!")
 	<-chVideoRdy
 	log.Printf("Video Ready!")
-
-	go sendAudioPkgs(audioTrack)
-	go sendVideoPkgs(videoTrack)
 
 	http.HandleFunc("/api", wsApiHandle)
 	http.HandleFunc("/webRTCFeed", handleConnection)

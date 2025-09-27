@@ -62,6 +62,7 @@ func startAudioFeed() {
 		util.CheckError(&err)
 	}
 
+	const scaleFactor = 3
 	sampleData := util.CreateRingBuffer[[]int16](1)
 	go func() {
 		for data := range sampleData.Read() {
@@ -74,12 +75,19 @@ func startAudioFeed() {
 			meanSquares := sumSquares / float64(len(data))
 			rms := math.Sqrt(meanSquares)
 
-			db := -96.0
-			if rms >= 1e-9 {
-				db = 20.0 * math.Log10(rms)
+			if rms < 1e-9 {
+				dbPerFrame.Push(-96.0 * scaleFactor)
+				continue
 			}
 
-			dbPerFrame.Push(db)
+			db := 20.0 * math.Log10(rms)
+			dBapm := db * scaleFactor
+
+			if dBapm > 0.0 {
+				dBapm = 0.0
+			}
+
+			dbPerFrame.Push(dBapm)
 		}
 	}()
 
