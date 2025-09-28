@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -15,6 +17,8 @@ const (
 	sampleRate        = 48000
 	channels          = 2
 	frameSize         = sampleRate * sampleDurationMs / 1000 // 40 ms at 48kHz
+
+	scaleFactor = 3
 )
 
 var (
@@ -64,7 +68,9 @@ func startAudioFeed() {
 
 	sampleData := util.CreateRingBuffer[[]int16](1)
 	go func() {
+
 		for data := range sampleData.Read() {
+
 			sumSquares := 0.0
 			for _, sample := range data {
 				norm := float64(sample) / math.MaxInt16
@@ -74,13 +80,27 @@ func startAudioFeed() {
 			meanSquares := sumSquares / float64(len(data))
 			rms := math.Sqrt(meanSquares)
 
-			db := -96.0
-			if rms >= 1e-9 {
-				db = 20.0 * math.Log10(rms)
+			if rms < 1e-9 {
+				dbPerFrame.Push(-96.0 * scaleFactor)
+				log.Println("continue in channel range")
+				continue
 			}
 
-			dbPerFrame.Push(db)
+			db := 20.0 * math.Log10(rms)
+			if math.IsNaN(db) || math.IsInf(db, 0) {
+				panic(fmt.Sprintf("Log10(%v) is NaN or Inf", rms))
+			}
+
+			dBapm := db * scaleFactor
+
+			if dBapm > 0.0 {
+				dBapm = 0.0
+			}
+
+			dbPerFrame.Push(dBapm)
 		}
+
+		panic("Audio analyzer exited")
 	}()
 
 	close(chAudioRdy)
