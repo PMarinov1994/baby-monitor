@@ -32,6 +32,9 @@ const (
 
 	REQ_WS_ID = "getWsId"
 	RES_WS_ID = "setWsId"
+
+	REQ_TOGGLE_NIGHT_VISION = "setToggleNightVision"
+	RES_TOGGLE_NIGHT_VISION = "gotToggleNightVision"
 )
 
 func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
@@ -116,6 +119,8 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 			processVolumeChangeReq(chunks, ws)
 		case REQ_WS_ID:
 			processWsIdReq(client.id, ws)
+		case REQ_TOGGLE_NIGHT_VISION:
+			processToggleNightVisionReq(chunks, ws)
 		}
 	}
 }
@@ -219,4 +224,16 @@ func processWsIdReq(id uuid.UUID, ws *websocket.Conn) {
 	))
 
 	log.Printf("Sending WsClient ID: %s\n", id.String())
+}
+
+func processToggleNightVisionReq(chunks []string, ws *websocket.Conn) {
+	toggle := chunks[1]
+
+	b, err := strconv.ParseBool(toggle)
+	if err != nil {
+		util.CheckError(&err)
+	}
+
+	toggleNightVision(b)
+	log.Printf("Setting night vision: %s\n", toggle)
 }

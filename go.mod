@@ -33,6 +33,7 @@ require (
 	github.com/gordonklaus/portaudio v0.0.0-20250206071425-98a94950218b
 	github.com/pion/interceptor v0.1.40
 	github.com/pion/webrtc/v4 v4.1.3
+	github.com/stianeikeland/go-rpio/v4 v4.6.0
 	github.com/vladimirvivien/go4vl v0.0.5
 	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
 )
