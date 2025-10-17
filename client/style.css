@@ -25,17 +25,18 @@ button {
 	width: 300px;
 }
 
-label {
-	display: block;
-	margin-top: 15px;
-	font-weight: bold;
-}
-
 #soundSettings select,
-#soundSettings input {
-	width: 50vw;
+#volume {
+	width: 80vw;
 	box-sizing: border-box;
 	margin: 20px;
+}
+
+#divToggleNightVision {
+	margin: 20px;
+	transform: scale(1.5);
+	width: 80vw;
+	box-sizing: border-box;
 }
 
 #soundSettingsOpenBtn {
