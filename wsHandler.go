@@ -163,8 +163,10 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		if updateNeeded {
+			log.Printf("Update other clients\n")
 			for _, currWs := range wsClients {
-				if currWs != nil && currWs.ws != ws {
+				if currWs != nil && currWs.id.String() != client.id.String() {
+					log.Printf("Update client with id %s\n", client.id)
 					sendStateToClient(currWs.ws)
 				}
 			}

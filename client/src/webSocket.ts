@@ -170,7 +170,7 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
     ws = new WebSocket(`ws://${loc.host}/api`);
 
     ws.onopen = () => {
-        // console.log('WebSocket connected');
+        console.log('WebSocket connected');
         ws?.send(REQ_WS_ID)
         ws?.send(REQ_SOUND_CARDS)
         ws?.send(REQ_GET_STATE)
@@ -206,7 +206,7 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
 
             case RES_WS_ID:
                 const wsId = parts[1]
-                console.log("Sending message")
+                console.log("Sending client id over data channel", wsId)
 
                 dc.onmessage = _ => dc.close()
                 if (dc.readyState !== "open") {
@@ -240,6 +240,7 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
 
             case REQ_UPDATE_STATE:
                 const state = JSON.parse(parts[1]) as StateUpdate
+                console.log("Curr state:\n", parts[1])
                 updateState(state)
                 break
         }
