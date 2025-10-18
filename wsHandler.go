@@ -76,31 +76,6 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		id: uuid.New(),
 	}
 
-	defer func() {
-		log.Printf("[WebSocket] Cleaning client with id %s\n", client.id.String())
-		for i, c := range wsClients {
-			if c != nil && c.id == client.id {
-				wsClients[i] = nil
-				break
-			}
-		}
-
-		if err := client.ws.Close(); err != nil {
-			util.CheckError(&err)
-		}
-
-		if err := client.peerConnection.Close(); err != nil {
-			util.CheckError(&err)
-		}
-
-		conClients--
-		log.Printf("ConnClients: %d\n", conClients)
-
-		if conClients == 0 {
-			toggleGreenLED(false)
-		}
-	}()
-
 	log.Printf("WebSocket client connected.\n")
 
 	if conClients >= MAX_CONNECTED_CLIENT {
@@ -121,8 +96,40 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 
 	log.Printf("[WebSocket] Added client with id %s\n", client.id.String())
 
+	go handleWsClient(client)
+}
+
+func handleWsClient(client WsClient) {
+	defer func() {
+		log.Printf("[WebSocket] Cleaning client with id %s\n", client.id.String())
+		for i, c := range wsClients {
+			if c != nil && c.id == client.id {
+				wsClients[i] = nil
+				break
+			}
+		}
+
+		if err := client.ws.Close(); err != nil {
+			util.CheckError(&err)
+		}
+
+		if client.peerConnection != nil {
+			if err := client.peerConnection.Close(); err != nil {
+				// Ignore error on close
+				util.CheckError(&err)
+			}
+		}
+
+		conClients--
+		log.Printf("ConnClients: %d\n", conClients)
+
+		if conClients == 0 {
+			toggleGreenLED(false)
+		}
+	}()
+
 	for {
-		t, msg, err := ws.ReadMessage()
+		t, msg, err := client.ws.ReadMessage()
 		if err != nil {
 			log.Printf("[WebSocket] Client (%s) error: %v\n", client.id.String(), err)
 			break
@@ -141,14 +148,14 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		updateNeeded := false
 		switch string(chunks[0]) {
 		case REQ_SOUND_CARDS:
-			processGetSoundCardsReq(ws)
+			processGetSoundCardsReq(client.ws)
 
 		case REQ_CHANGE_SOUND:
-			processVolumeChangeReq(chunks, ws)
+			processVolumeChangeReq(chunks, client.ws)
 			updateNeeded = true
 
 		case REQ_WS_ID:
-			processWsIdReq(client.id, ws)
+			processWsIdReq(client.id, client.ws)
 
 		case REQ_TOGGLE_NIGHT_VISION:
 			processToggleNightVisionReq(chunks)
@@ -159,14 +166,14 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 			updateNeeded = true
 
 		case REQ_GET_STATE:
-			sendStateToClient(ws)
+			sendStateToClient(client.ws)
 		}
 
 		if updateNeeded {
 			log.Printf("Update other clients\n")
 			for _, currWs := range wsClients {
 				if currWs != nil && currWs.id.String() != client.id.String() {
-					log.Printf("Update client with id %s\n", client.id)
+					log.Printf("Update client with id %s\n", currWs.id)
 					sendStateToClient(currWs.ws)
 				}
 			}
@@ -316,7 +323,7 @@ func sendStateToClient(ws *websocket.Conn) {
 
 	request := make([]byte, resHeaderLen+resSeparatorLen+len(jsonData))
 
-	copy(request, []byte(RES_SOUND_CARDS))
+	copy(request, []byte(REQ_UPDATE_STATE))
 	copy(request[resHeaderLen:], []byte(DATA_SEPARATOR))
 	copy(request[resHeaderLen+resSeparatorLen:], jsonData)
 

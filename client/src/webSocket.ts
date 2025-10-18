@@ -51,6 +51,7 @@ const toggleNightVision = document.getElementById('toggleNightVision') as HTMLIn
 const toggleSoundDraw = document.getElementById('toggleSoundWaveDraw') as HTMLInputElement
 
 let soundCards: SoundCard[] = []
+let ignoreEvent: boolean = false
 
 function updateState(state: StateUpdate) {
     state.soundCards.forEach((sc, scIdx) => {
@@ -67,9 +68,11 @@ function updateState(state: StateUpdate) {
     toggleNightVision.checked = state.nightVision
     toggleSoundDraw.checked = state.drawSound
 
+    ignoreEvent = true
     volumeSlider.dispatchEvent(new Event('change'))
     toggleNightVision.dispatchEvent(new Event('change'))
     toggleSoundDraw.dispatchEvent(new Event('change'))
+    ignoreEvent = false
 }
 
 
@@ -118,6 +121,9 @@ outputsSelect.addEventListener('change', () => {
 })
 
 volumeSlider.addEventListener('change', () => {
+    if (ignoreEvent)
+        return
+
     const cardIndex = parseInt(soundCardSelect.value, 10)
     const channelndex = parseInt(outputsSelect.value, 10)
 
@@ -141,7 +147,7 @@ volumeSlider.addEventListener('change', () => {
 })
 
 toggleNightVision.addEventListener('change', () => {
-    if (ws === null)
+    if (ws === null || ignoreEvent)
         return
 
     const chunks: string[] = [
@@ -153,7 +159,7 @@ toggleNightVision.addEventListener('change', () => {
 })
 
 toggleSoundDraw.addEventListener('change', () => {
-    if (ws === null)
+    if (ws === null || ignoreEvent)
         return
 
     const chunks: string[] = [
@@ -177,7 +183,7 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
     };
 
     ws.onmessage = (event: MessageEvent) => {
-        // console.log('WebSocket message:', event.data);
+        console.log('WebSocket message:', event.data);
         const response: string = event.data as string
 
         const parts = response.split(DATA_SEPARATOR)
