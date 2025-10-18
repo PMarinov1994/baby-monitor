@@ -66,6 +66,10 @@ function updateState(state: StateUpdate) {
     volumeSlider.value = currVol
     toggleNightVision.checked = state.nightVision
     toggleSoundDraw.checked = state.drawSound
+
+    volumeSlider.dispatchEvent(new Event('change'))
+    toggleNightVision.dispatchEvent(new Event('change'))
+    toggleSoundDraw.dispatchEvent(new Event('change'))
 }
 
 
