@@ -21,23 +21,42 @@ type WsClient struct {
 	peerConnection *webrtc.PeerConnection
 }
 
+type WsClientState struct {
+	SoundCards  []*mic.SoundCard `json:"soundCards"`
+	NightVision bool             `json:"nightVision"`
+	DrawSound   bool             `json:"drawSound"`
+}
+
 const (
 	DATA_SEPARATOR = "&&&"
 
+	// Client -> Server
 	REQ_SOUND_CARDS = "getSoundCards"
 	RES_SOUND_CARDS = "gotSoundCards"
 
+	// Client -> Server
 	REQ_CHANGE_SOUND = "setSound"
 	RES_CHANGE_SOUND = "gotSound"
 
+	// Client -> Server
 	REQ_WS_ID = "getWsId"
 	RES_WS_ID = "setWsId"
 
+	// Client -> Server
 	REQ_TOGGLE_NIGHT_VISION = "setToggleNightVision"
 	RES_TOGGLE_NIGHT_VISION = "gotToggleNightVision"
 
+	// Client -> Server
 	REQ_TOGGLE_SOUND_DRAW = "setToggleSoundDraw"
 	RES_TOGGLE_SOUND_DRAW = "gotToggleSoundDraw"
+
+	// Server -> Client
+	REQ_UPDATE_STATE = "setUpdateState"
+	RES_UPDATE_STATE = "gotUpdateState"
+
+	// Client -> Server
+	REQ_GET_STATE = "getGetState"
+	RES_GET_STATE = "gotGetState"
 )
 
 func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
@@ -119,17 +138,36 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		req := string(msg)
 		chunks := strings.Split(req, DATA_SEPARATOR)
 
+		updateNeeded := false
 		switch string(chunks[0]) {
 		case REQ_SOUND_CARDS:
 			processGetSoundCardsReq(ws)
+
 		case REQ_CHANGE_SOUND:
 			processVolumeChangeReq(chunks, ws)
+			updateNeeded = true
+
 		case REQ_WS_ID:
 			processWsIdReq(client.id, ws)
+
 		case REQ_TOGGLE_NIGHT_VISION:
 			processToggleNightVisionReq(chunks)
+			updateNeeded = true
+
 		case REQ_TOGGLE_SOUND_DRAW:
 			processToggleSoundDraw(chunks)
+			updateNeeded = true
+
+		case REQ_GET_STATE:
+			sendStateToClient(ws)
+		}
+
+		if updateNeeded {
+			for _, currWs := range wsClients {
+				if currWs.ws != ws {
+					sendStateToClient(currWs.ws)
+				}
+			}
 		}
 	}
 }
@@ -257,4 +295,30 @@ func processToggleSoundDraw(chunks []string) {
 
 	enableSoundDraw = b
 	log.Printf("Setting sound draw: %s\n", toggle)
+}
+
+func sendStateToClient(ws *websocket.Conn) {
+	content := WsClientState{
+		SoundCards:  soundCards,
+		DrawSound:   enableSoundDraw,
+		NightVision: isNightVisionOn,
+	}
+
+	jsonData, err := json.Marshal(content)
+	if err != nil {
+		util.CheckError(&err)
+	}
+
+	resHeaderLen := len(REQ_UPDATE_STATE)
+	resSeparatorLen := len(DATA_SEPARATOR)
+
+	request := make([]byte, resHeaderLen+resSeparatorLen+len(jsonData))
+
+	copy(request, []byte(RES_SOUND_CARDS))
+	copy(request[resHeaderLen:], []byte(DATA_SEPARATOR))
+	copy(request[resHeaderLen+resSeparatorLen:], jsonData)
+
+	if err := ws.WriteMessage(websocket.TextMessage, request); err != nil {
+		util.CheckError(&err)
+	}
 }

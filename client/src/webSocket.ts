@@ -17,11 +17,11 @@ const RES_TOGGLE_NIGHT_VISION = "gotToggleNightVision"
 const REQ_TOGGLE_SOUND_DRAW = "setToggleSoundDraw"
 const RES_TOGGLE_SOUND_DRAW = "gotToggleSoundDraw"
 
-const soundCardSelect = document.getElementById('soundCards') as HTMLSelectElement
-const outputsSelect = document.getElementById('outputs') as HTMLSelectElement
-const volumeSlider = document.getElementById('volume') as HTMLInputElement
-const toggleNightVision = document.getElementById('toggleNightVision') as HTMLInputElement
-const toggleSoundDraw = document.getElementById('toggleSoundWaveDraw') as HTMLInputElement
+const REQ_UPDATE_STATE = "setUpdateState"
+// const RES_UPDATE_STATE = "gotUpdateState"
+
+const REQ_GET_STATE = "getGetState"
+const RES_GET_STATE = "gotGetState"
 
 
 interface OutputChannel {
@@ -38,7 +38,36 @@ interface SoundCard {
     outChannels: OutputChannel[];
 }
 
+interface StateUpdate {
+    soundCards: SoundCard[];
+    nightVision: boolean;
+    drawSound: boolean;
+}
+
+const soundCardSelect = document.getElementById('soundCards') as HTMLSelectElement
+const outputsSelect = document.getElementById('outputs') as HTMLSelectElement
+const volumeSlider = document.getElementById('volume') as HTMLInputElement
+const toggleNightVision = document.getElementById('toggleNightVision') as HTMLInputElement
+const toggleSoundDraw = document.getElementById('toggleSoundWaveDraw') as HTMLInputElement
+
 let soundCards: SoundCard[] = []
+
+function updateState(state: StateUpdate) {
+    state.soundCards.forEach((sc, scIdx) => {
+        sc.outChannels.forEach((oc, ocIdx) => {
+            soundCards[scIdx].outChannels[ocIdx].curVolume = oc.curVolume
+        })
+    })
+
+    const cardIdx = parseInt(soundCardSelect.value, 10)
+    const outputIdx = parseInt(outputsSelect.value, 10)
+    const currVol = soundCards[cardIdx].outChannels[outputIdx].curVolume.toString()
+
+    volumeSlider.value = currVol
+    toggleNightVision.checked = state.nightVision
+    toggleSoundDraw.checked = state.drawSound
+}
+
 
 function resetVolumeSlider(): void {
     volumeSlider.min = "0"
@@ -140,6 +169,7 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
         // console.log('WebSocket connected');
         ws?.send(REQ_WS_ID)
         ws?.send(REQ_SOUND_CARDS)
+        ws?.send(REQ_GET_STATE)
     };
 
     ws.onmessage = (event: MessageEvent) => {
@@ -196,6 +226,17 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
                 if (parts[1].toLowerCase().includes("error")) {
                     alert(parts[1])
                 }
+                break
+
+            case RES_GET_STATE:
+                if (parts[1].toLowerCase().includes("error")) {
+                    alert(parts[1])
+                }
+                break
+
+            case REQ_UPDATE_STATE:
+                const state = JSON.parse(parts[1]) as StateUpdate
+                updateState(state)
                 break
         }
     };

@@ -19,6 +19,8 @@ var (
 
 	pinGreenLED rpio.Pin
 	pinRedLED   rpio.Pin
+
+	isNightVisionOn = false
 )
 
 func initGpio() {
@@ -50,6 +52,8 @@ func closeGpio() {
 }
 
 func toggleNightVision(toggle bool) {
+	isNightVisionOn = toggle
+
 	if toggle {
 		pinCamIrFilter.Low()
 		pinIrLed.High()
