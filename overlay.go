@@ -34,6 +34,8 @@ var (
 	dbFrameOverlayHead = 0
 
 	skippedOverlay uint64 = 0
+
+	enableSoundDraw = false
 )
 
 func applyOverlay(frame *[]byte) {
@@ -53,6 +55,10 @@ func applyOverlay(frame *[]byte) {
 
 	if skippedOverlay > overlayUpdateSkips {
 		panic(fmt.Sprintf("Skipped overlay new data: %d\n", skippedOverlay))
+	}
+
+	if !enableSoundDraw {
+		return
 	}
 
 	lastX, lastY := 0, 0

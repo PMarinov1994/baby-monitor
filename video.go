@@ -33,8 +33,6 @@ const (
 
 var (
 	chVideoRdy = make(chan struct{})
-
-	enableSoundDraw = false
 )
 
 type streamYUVReader struct {
@@ -114,9 +112,7 @@ func startVideoFeed() {
 
 	for rawFrame := range rpiCam.VideoFeed.Read() {
 		// Apply overlay
-		if enableSoundDraw {
-			applyOverlay(&rawFrame)
-		}
+		applyOverlay(&rawFrame)
 
 		// Feed the encoder
 		encoder.rawFrameCh <- rawFrame
