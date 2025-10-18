@@ -8,11 +8,17 @@ import (
 const (
 	gpioCamIrFilter = 15
 	gpioIrLED       = 14
+
+	gpioGreenLED = 23
+	gpioRedLED   = 24
 )
 
 var (
 	pinCamIrFilter rpio.Pin
 	pinIrLed       rpio.Pin
+
+	pinGreenLED rpio.Pin
+	pinRedLED   rpio.Pin
 )
 
 func initGpio() {
@@ -21,10 +27,20 @@ func initGpio() {
 	}
 
 	pinCamIrFilter = rpio.Pin(gpioCamIrFilter)
+	pinCamIrFilter.Output()
 	pinCamIrFilter.High()
 
 	pinIrLed = rpio.Pin(gpioIrLED)
+	pinIrLed.Output()
 	pinIrLed.Low()
+
+	pinGreenLED = rpio.Pin(gpioGreenLED)
+	pinGreenLED.Output()
+	pinGreenLED.High()
+
+	pinRedLED = rpio.Pin(gpioRedLED)
+	pinRedLED.Output()
+	pinRedLED.Low()
 }
 
 func closeGpio() {
@@ -37,8 +53,10 @@ func toggleNightVision(toggle bool) {
 	if toggle {
 		pinCamIrFilter.Low()
 		pinIrLed.High()
+		pinRedLED.High()
 	} else {
 		pinCamIrFilter.High()
 		pinIrLed.Low()
+		pinRedLED.Low()
 	}
 }
