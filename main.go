@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 
 	"githug.com/pmarinov1994/baby-monitor/mic"
@@ -23,6 +25,9 @@ var (
 )
 
 func main() {
+	log.Printf("GPIO Init...\n")
+	initGpio()
+
 	log.Printf("Enumerationg sound cards...\n")
 	sc, err := mic.EnumSoundCards()
 	if err != nil {
@@ -52,8 +57,29 @@ func main() {
 	http.HandleFunc("/webRTCFeed", handleConnection)
 	http.Handle("/", http.FileServer(http.Dir("./client/dist")))
 
+	ipAddr := getIpAddr()
+	port := 8080
+
 	log.Printf("======= Web Server Ready! =======\n")
-	if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
+	log.Printf("======= %s:%d =======\n", ipAddr, port)
+	if err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func getIpAddr() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		util.CheckError(&err)
+	}
+
+	for _, addr := range addrs {
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			if ipNet.IP.To4() != nil {
+				return ipNet.IP.String()
+			}
+		}
+	}
+
+	panic("Failed to get IP Address")
 }
