@@ -36,7 +36,7 @@ func initGpio() {
 
 	pinGreenLED = rpio.Pin(gpioGreenLED)
 	pinGreenLED.Output()
-	pinGreenLED.High()
+	pinGreenLED.Low()
 
 	pinRedLED = rpio.Pin(gpioRedLED)
 	pinRedLED.Output()
@@ -58,5 +58,13 @@ func toggleNightVision(toggle bool) {
 		pinCamIrFilter.High()
 		pinIrLed.Low()
 		pinRedLED.Low()
+	}
+}
+
+func toggleGreenLED(toggle bool) {
+	if toggle {
+		pinGreenLED.High()
+	} else {
+		pinGreenLED.Low()
 	}
 }

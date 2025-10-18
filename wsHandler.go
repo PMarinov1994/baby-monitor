@@ -76,6 +76,10 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 
 		conClients--
 		log.Printf("ConnClients: %d\n", conClients)
+
+		if conClients == 0 {
+			toggleGreenLED(false)
+		}
 	}()
 
 	log.Printf("WebSocket client connected.\n")

@@ -189,6 +189,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 			for _, c := range wsClients {
 				if c.id.String() == strMsg {
 					conClients++
+					toggleGreenLED(true)
 					log.Printf("ConnClients: %d\n", conClients)
 					c.peerConnection = peerConnection
 					found = true

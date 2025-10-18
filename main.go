@@ -27,6 +27,7 @@ var (
 func main() {
 	log.Printf("GPIO Init...\n")
 	initGpio()
+	defer closeGpio()
 
 	log.Printf("Enumerationg sound cards...\n")
 	sc, err := mic.EnumSoundCards()
