@@ -129,6 +129,10 @@ func handleWsClient(client WsClient) {
 	}()
 
 	for {
+		if shutdown {
+			return
+		}
+
 		t, msg, err := client.ws.ReadMessage()
 		if err != nil {
 			log.Printf("[WebSocket] Client (%s) error: %v\n", client.id.String(), err)
@@ -170,10 +174,8 @@ func handleWsClient(client WsClient) {
 		}
 
 		if updateNeeded {
-			log.Printf("Update other clients\n")
 			for _, currWs := range wsClients {
 				if currWs != nil && currWs.id.String() != client.id.String() {
-					log.Printf("Update client with id %s\n", currWs.id)
 					sendStateToClient(currWs.ws)
 				}
 			}

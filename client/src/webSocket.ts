@@ -183,7 +183,7 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
     };
 
     ws.onmessage = (event: MessageEvent) => {
-        console.log('WebSocket message:', event.data);
+        // console.log('WebSocket message:', event.data);
         const response: string = event.data as string
 
         const parts = response.split(DATA_SEPARATOR)
@@ -246,7 +246,6 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
 
             case REQ_UPDATE_STATE:
                 const state = JSON.parse(parts[1]) as StateUpdate
-                console.log("Curr state:\n", parts[1])
                 updateState(state)
                 break
         }

@@ -90,6 +90,7 @@ func startVideoFeed() {
 	rpiCam.Loglevel = 2
 
 	go func() {
+		// TODO: We need to shutdown this native loop
 		rpiCam.StartRpiCamera()
 	}()
 
@@ -104,6 +105,10 @@ func startVideoFeed() {
 
 	go func() {
 		for {
+			if shutdown {
+				return
+			}
+
 			encoder.ProcessFrame()
 		}
 	}()
@@ -111,6 +116,10 @@ func startVideoFeed() {
 	close(chVideoRdy)
 
 	for rawFrame := range rpiCam.VideoFeed.Read() {
+		if shutdown {
+			return
+		}
+
 		// Apply overlay
 		applyOverlay(&rawFrame)
 

@@ -22,6 +22,9 @@ var (
 	wsClients  []*WsClient = make([]*WsClient, MAX_CONNECTED_CLIENT)
 
 	soundCards []*mic.SoundCard
+
+	// TODO: Intercept interupt sig
+	shutdown = false
 )
 
 func main() {

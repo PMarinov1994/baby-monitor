@@ -68,8 +68,10 @@ func startAudioFeed() {
 
 	sampleData := util.CreateRingBuffer[[]int16](1)
 	go func() {
-
 		for data := range sampleData.Read() {
+			if shutdown {
+				return
+			}
 
 			sumSquares := 0.0
 			for _, sample := range data {
@@ -100,11 +102,15 @@ func startAudioFeed() {
 			dbPerFrame.Push(dBapm)
 		}
 
-		panic("Audio analyzer exited")
+		log.Printf("Audio analyzer exited\n")
 	}()
 
 	close(chAudioRdy)
 	for {
+		if shutdown {
+			return
+		}
+
 		// Read exactly one frame worth of PCM
 		if err := istream.Read(); err != nil {
 			util.CheckError(&err)
