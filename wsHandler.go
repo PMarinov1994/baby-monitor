@@ -35,6 +35,9 @@ const (
 
 	REQ_TOGGLE_NIGHT_VISION = "setToggleNightVision"
 	RES_TOGGLE_NIGHT_VISION = "gotToggleNightVision"
+
+	REQ_TOGGLE_SOUND_DRAW = "setToggleSoundDraw"
+	RES_TOGGLE_SOUND_DRAW = "gotToggleSoundDraw"
 )
 
 func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
@@ -120,7 +123,9 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 		case REQ_WS_ID:
 			processWsIdReq(client.id, ws)
 		case REQ_TOGGLE_NIGHT_VISION:
-			processToggleNightVisionReq(chunks, ws)
+			processToggleNightVisionReq(chunks)
+		case REQ_TOGGLE_SOUND_DRAW:
+			processToggleSoundDraw(chunks)
 		}
 	}
 }
@@ -226,7 +231,7 @@ func processWsIdReq(id uuid.UUID, ws *websocket.Conn) {
 	log.Printf("Sending WsClient ID: %s\n", id.String())
 }
 
-func processToggleNightVisionReq(chunks []string, ws *websocket.Conn) {
+func processToggleNightVisionReq(chunks []string) {
 	toggle := chunks[1]
 
 	b, err := strconv.ParseBool(toggle)
@@ -236,4 +241,16 @@ func processToggleNightVisionReq(chunks []string, ws *websocket.Conn) {
 
 	toggleNightVision(b)
 	log.Printf("Setting night vision: %s\n", toggle)
+}
+
+func processToggleSoundDraw(chunks []string) {
+	toggle := chunks[1]
+
+	b, err := strconv.ParseBool(toggle)
+	if err != nil {
+		util.CheckError(&err)
+	}
+
+	enableSoundDraw = b
+	log.Printf("Setting sound draw: %s\n", toggle)
 }

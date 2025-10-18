@@ -14,10 +14,14 @@ const RES_WS_ID = "setWsId"
 const REQ_TOGGLE_NIGHT_VISION = "setToggleNightVision"
 const RES_TOGGLE_NIGHT_VISION = "gotToggleNightVision"
 
+const REQ_TOGGLE_SOUND_DRAW = "setToggleSoundDraw"
+const RES_TOGGLE_SOUND_DRAW = "gotToggleSoundDraw"
+
 const soundCardSelect = document.getElementById('soundCards') as HTMLSelectElement
 const outputsSelect = document.getElementById('outputs') as HTMLSelectElement
 const volumeSlider = document.getElementById('volume') as HTMLInputElement
 const toggleNightVision = document.getElementById('toggleNightVision') as HTMLInputElement
+const toggleSoundDraw = document.getElementById('toggleSoundWaveDraw') as HTMLInputElement
 
 
 interface OutputChannel {
@@ -115,6 +119,18 @@ toggleNightVision.addEventListener('change', () => {
     ws.send(chunks.join(DATA_SEPARATOR))
 })
 
+toggleSoundDraw.addEventListener('change', () => {
+    if (ws === null)
+        return
+
+    const chunks: string[] = [
+        REQ_TOGGLE_SOUND_DRAW,
+        toggleSoundDraw.checked.toString(),
+    ]
+
+    ws.send(chunks.join(DATA_SEPARATOR))
+})
+
 export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
     const loc = window.location;
 
@@ -171,6 +187,12 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
                 break
 
             case RES_TOGGLE_NIGHT_VISION:
+                if (parts[1].toLowerCase().includes("error")) {
+                    alert(parts[1])
+                }
+                break
+
+            case RES_TOGGLE_SOUND_DRAW:
                 if (parts[1].toLowerCase().includes("error")) {
                     alert(parts[1])
                 }

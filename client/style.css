@@ -32,7 +32,7 @@ button {
 	margin: 20px;
 }
 
-#divToggleNightVision {
+.divToggle {
 	margin: 20px;
 	transform: scale(1.5);
 	width: 80vw;
