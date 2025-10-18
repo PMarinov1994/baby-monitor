@@ -79,7 +79,7 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		log.Printf("[WebSocket] Cleaning client with id %s\n", client.id.String())
 		for i, c := range wsClients {
-			if c.id == client.id {
+			if c != nil && c.id == client.id {
 				wsClients[i] = nil
 				break
 			}
@@ -164,7 +164,7 @@ func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
 
 		if updateNeeded {
 			for _, currWs := range wsClients {
-				if currWs.ws != ws {
+				if currWs != nil && currWs.ws != ws {
 					sendStateToClient(currWs.ws)
 				}
 			}

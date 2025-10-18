@@ -187,7 +187,7 @@ func handleConnection(res http.ResponseWriter, req *http.Request) {
 
 			found := false
 			for _, c := range wsClients {
-				if c.id.String() == strMsg {
+				if c != nil && c.id.String() == strMsg {
 					conClients++
 					toggleGreenLED(true)
 					log.Printf("ConnClients: %d\n", conClients)
