@@ -21,6 +21,7 @@ sudo ln -s /lib/systemd/system/getty@.service getty@ttyGS0.service
 - libopus-dev
 - libopusfile-dev
 - rpicam-apps
+- libyuv-dev
 
 ### Building rpicam-apps
 - libcamera-dev

@@ -31,8 +31,19 @@ const (
 	hheight = height / 2
 )
 
+type Rotation int
+
+const (
+	Rotate0   Rotation = 0
+	Rotate90  Rotation = 90
+	Rotate180 Rotation = 180
+	Rotate270 Rotation = 270
+)
+
 var (
 	chVideoRdy = make(chan struct{})
+
+	vidFrameRotation = Rotate0
 )
 
 type streamYUVReader struct {
@@ -122,6 +133,18 @@ func startVideoFeed() {
 
 		// Apply overlay
 		applyOverlay(&rawFrame)
+
+		// Apply rotation
+		if vidFrameRotation != Rotate0 {
+			rframe, err := rpicam.RotateI420Libyuv(
+				rawFrame, width, height, hwidth, hheight, int(vidFrameRotation))
+
+			if err != nil {
+				util.CheckError(&err)
+			}
+
+			rawFrame = rframe
+		}
 
 		// Feed the encoder
 		encoder.rawFrameCh <- rawFrame

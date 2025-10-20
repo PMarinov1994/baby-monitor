@@ -57,6 +57,10 @@ const (
 	// Client -> Server
 	REQ_GET_STATE = "getGetState"
 	RES_GET_STATE = "gotGetState"
+
+	// Client -> Server
+	REQ_SET_ROTATE = "getSetRotate"
+	RES_SET_ROTATE = "gotSetRotate"
 )
 
 func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
@@ -171,6 +175,9 @@ func handleWsClient(client WsClient) {
 
 		case REQ_GET_STATE:
 			sendStateToClient(client.ws)
+
+		case REQ_SET_ROTATE:
+			processSetRotate(chunks, client.ws)
 		}
 
 		if updateNeeded {
@@ -332,4 +339,20 @@ func sendStateToClient(ws *websocket.Conn) {
 	if err := ws.WriteMessage(websocket.TextMessage, request); err != nil {
 		util.CheckError(&err)
 	}
+}
+
+func processSetRotate(chunks []string, ws *websocket.Conn) {
+	if len(chunks) != 2 &&
+		chunks[1] != "0" && chunks[1] != "90" &&
+		chunks[1] != "180" && chunks[1] != "270" {
+		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
+			"%s%sError: Invalid parameters",
+			RES_SET_ROTATE,
+			DATA_SEPARATOR,
+		))
+	}
+
+	r, _ := strconv.Atoi(chunks[1]) // We checked the string above
+
+	vidFrameRotation = Rotation(r)
 }

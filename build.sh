@@ -58,6 +58,7 @@ if $DEPS; then
 		libopus-dev \
 		libopusfile-dev \
 		rpicam-apps \
+		libyuv-dev \
 		cmake \
 		libboost-program-options-dev \
 		libdrm-dev \
