@@ -343,8 +343,7 @@ func sendStateToClient(ws *websocket.Conn) {
 
 func processSetRotate(chunks []string, ws *websocket.Conn) {
 	if len(chunks) != 2 &&
-		chunks[1] != "0" && chunks[1] != "90" &&
-		chunks[1] != "180" && chunks[1] != "270" {
+		chunks[1] != "-90" && chunks[1] != "90" {
 		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
 			"%s%sError: Invalid parameters",
 			RES_SET_ROTATE,
@@ -354,5 +353,12 @@ func processSetRotate(chunks []string, ws *websocket.Conn) {
 
 	r, _ := strconv.Atoi(chunks[1]) // We checked the string above
 
-	vidFrameRotation = Rotation(r)
+	newRotation := int(vidFrameRotation)
+	newRotation += r
+
+	if newRotation > 270 || newRotation < 0 || newRotation%90 != 0 {
+		newRotation = 0
+	}
+
+	vidFrameRotation = Rotation(newRotation)
 }

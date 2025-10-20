@@ -23,6 +23,9 @@ const REQ_UPDATE_STATE = "setUpdateState"
 const REQ_GET_STATE = "getGetState"
 const RES_GET_STATE = "gotGetState"
 
+const REQ_SET_ROTATE = "getSetRotate"
+const RES_SET_ROTATE = "gotSetRotate"
+
 
 interface OutputChannel {
     name: string;
@@ -49,9 +52,35 @@ const outputsSelect = document.getElementById('outputs') as HTMLSelectElement
 const volumeSlider = document.getElementById('volume') as HTMLInputElement
 const toggleNightVision = document.getElementById('toggleNightVision') as HTMLInputElement
 const toggleSoundDraw = document.getElementById('toggleSoundWaveDraw') as HTMLInputElement
+const btnRotateLeft = document.getElementById('rotateLeft') as HTMLButtonElement
+const btnRotateRight = document.getElementById('rotateRight') as HTMLButtonElement
 
 let soundCards: SoundCard[] = []
 let ignoreEvent: boolean = false
+
+btnRotateLeft.addEventListener('click', () => {
+    if (ws === null)
+        return
+
+    const chunks: string[] = [
+        REQ_SET_ROTATE,
+        "-90",
+    ]
+
+    ws.send(chunks.join(DATA_SEPARATOR))
+})
+
+btnRotateRight.addEventListener('click', () => {
+    if (ws === null)
+        return
+
+    const chunks: string[] = [
+        REQ_SET_ROTATE,
+        "+90",
+    ]
+
+    ws.send(chunks.join(DATA_SEPARATOR))
+})
 
 function updateState(state: StateUpdate) {
     state.soundCards.forEach((sc, scIdx) => {
@@ -204,12 +233,6 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
 
                 break
 
-            case RES_CHANGE_SOUND:
-                if (parts[1].toLowerCase().includes("error")) {
-                    alert(parts[1])
-                }
-                break
-
             case RES_WS_ID:
                 const wsId = parts[1]
                 console.log("Sending client id over data channel", wsId)
@@ -226,27 +249,19 @@ export function wsConnect(pc: RTCPeerConnection, dc: RTCDataChannel): void {
 
                 break
 
-            case RES_TOGGLE_NIGHT_VISION:
-                if (parts[1].toLowerCase().includes("error")) {
-                    alert(parts[1])
-                }
-                break
-
-            case RES_TOGGLE_SOUND_DRAW:
-                if (parts[1].toLowerCase().includes("error")) {
-                    alert(parts[1])
-                }
-                break
-
-            case RES_GET_STATE:
-                if (parts[1].toLowerCase().includes("error")) {
-                    alert(parts[1])
-                }
-                break
-
             case REQ_UPDATE_STATE:
                 const state = JSON.parse(parts[1]) as StateUpdate
                 updateState(state)
+                break
+
+            case RES_CHANGE_SOUND:
+            case RES_TOGGLE_NIGHT_VISION:
+            case RES_TOGGLE_SOUND_DRAW:
+            case RES_GET_STATE:
+            case RES_SET_ROTATE:
+                if (parts[1].toLowerCase().includes("error")) {
+                    alert(parts[1])
+                }
                 break
         }
     };
