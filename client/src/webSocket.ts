@@ -64,7 +64,7 @@ btnRotateLeft.addEventListener('click', () => {
 
     const chunks: string[] = [
         REQ_SET_ROTATE,
-        "-90",
+        "-180",
     ]
 
     ws.send(chunks.join(DATA_SEPARATOR))
@@ -76,7 +76,7 @@ btnRotateRight.addEventListener('click', () => {
 
     const chunks: string[] = [
         REQ_SET_ROTATE,
-        "+90",
+        "+180",
     ]
 
     ws.send(chunks.join(DATA_SEPARATOR))
