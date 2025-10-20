@@ -12,10 +12,10 @@ print_help() {
   echo "Usage: $0 [options]"
   echo
   echo "Options:"
-  echo "  -deps, --dependencies       Enable front-end placeholder"
-  echo "  -ui, --front-end            Enable front-end placeholder"
-  echo "  -ncam, --native-camera-lib  Enable native camera lib placeholder"
-  echo "  -r, --run                   Run the if/else block"
+  echo "  -deps, --dependencies       Install build dependencies"
+  echo "  -ui, --front-end            Build UI front-end"
+  echo "  -ncam, --native-camera-lib  Build C camera library"
+  echo "  -r, --run                   Run the program after build"
   echo "  -h, --help                  Show this help message"
 }
 
@@ -103,8 +103,8 @@ if $NCAM; then
 	popd
 fi
 
+go build
+
 if $RUN; then
-  go run .
-else
-	go build
+  ./baby-monitor
 fi
