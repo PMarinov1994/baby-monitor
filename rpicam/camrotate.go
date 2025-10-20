@@ -6,7 +6,10 @@ package rpicam
 #include <libyuv.h>
 */
 import "C"
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // RotateI420Libyuv rotates an I420 (YUV420) frame using libyuv's SIMD code.
 //
@@ -19,7 +22,7 @@ import "errors"
 //	returns: the rotated frame of error.
 func RotateI420Libyuv(src []byte, w, h, hw, hh, angle int) ([]byte, error) {
 	if len(src) != w*h*3/2 {
-		return nil, errors.New("invalid I420 frame size")
+		return nil, fmt.Errorf("invalid I420 frame size. %d != %d", len(src), w*h*3/2)
 	}
 
 	// libyuv rotation constants
