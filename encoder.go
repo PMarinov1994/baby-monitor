@@ -51,6 +51,7 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 	outFmtMPlane.Width = width
 	outFmtMPlane.Height = height
 	outFmtMPlane.PixelFormat = fmt
+	outFmtMPlane.Field = v4l2.FieldAny
 
 	if err := v4l2.SetPixFormatMPlane(encoder.fd, outFmtMPlane, v4l2.BufTypeVideoOutputMPlane); err != nil {
 		util.CheckError(&err) // TODO: Remove
@@ -66,6 +67,8 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 	capFmtMplane.Width = width
 	capFmtMplane.Height = height
 	capFmtMplane.PixelFormat = v4l2.PixelFmtH264
+	capFmtMplane.Field = v4l2.FieldAny
+	capFmtMplane.Colorspace = v4l2.ColorspaceDefault
 
 	if err := v4l2.SetPixFormatMPlane(encoder.fd, capFmtMplane, v4l2.BufTypeVideoCaptureMPlane); err != nil {
 		util.CheckError(&err) // TODO: Remove
@@ -77,6 +80,20 @@ func (encoder *Encoder) Init(dev string, width, height uint32, fmt v4l2.FourCCTy
 		bufType: v4l2.BufTypeVideoOutputMPlane,
 		ioType:  v4l2.IOTypeMMAP,
 		count:   1,
+	}
+
+	outputParam := v4l2.StreamParam{
+		Output: v4l2.OutputParam{
+			TimePerFrame: v4l2.Fract{
+				Numerator:   90000.0 / targetFPS,
+				Denominator: 90000,
+			},
+		},
+	}
+
+	if err := v4l2.SetStreamParam(encoder.outputDev.fd, encoder.outputDev.bufType, outputParam); err != nil {
+		util.CheckError(&err) // TODO: Remove
+		return err
 	}
 
 	outReqBuf, err := v4l2.InitBuffers(encoder.outputDev) // VIDIOC_REQBUFS

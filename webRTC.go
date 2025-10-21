@@ -276,15 +276,28 @@ func sendAudioPkgs(audioTrack *webrtc.TrackLocalStaticSample) {
 }
 
 func sendVideoPkgs(videoTrack *webrtc.TrackLocalStaticSample) {
-	for videoData := range videoFrames.Read() {
-		if shutdown {
-			return
+	emptyFrame := []byte{
+		0x00, 0x00, 0x00, 0x01, 0x09, 0xF0, // AUD
+		0x00, 0x00, 0x00, 0x01, 0x41, 0x9A, 0x22, // minimal P-slice
+	}
+
+	ticker := time.NewTicker(h264FrameDuration)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		var frame []byte
+		select {
+		case videoData := <-videoFrames.Read():
+			frame = videoData
+		default:
+			frame = emptyFrame
+			log.Println("Empty frame")
 		}
 
 		now := time.Now()
 
 		videoPkg := media.Sample{
-			Data:      videoData,
+			Data:      frame,
 			Duration:  h264FrameDuration,
 			Timestamp: now,
 		}
