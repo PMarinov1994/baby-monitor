@@ -94,7 +94,7 @@ func (reader *streamYUVReader) Read() ([]byte, error) {
 
 func startVideoFeed() {
 
-	rpiCam := rpicam.CreateRpiCamera()
+	rpiCam := rpicam.CreateRpiCamera(VIDEO_FRAME_BUFFER_COUNT)
 	rpiCam.Width = width
 	rpiCam.Height = height
 	rpiCam.Framerate = targetFPS

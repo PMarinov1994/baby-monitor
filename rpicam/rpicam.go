@@ -46,9 +46,9 @@ func (rpiCamera *RpiCamera) StartRpiCamera() int {
 	return int(result)
 }
 
-func CreateRpiCamera() *RpiCamera {
+func CreateRpiCamera(buffFrameCount int) *RpiCamera {
 	rpiCamera = &RpiCamera{}
-	rpiCamera.VideoFeed = util.CreateRingBuffer[[]byte](2)
+	rpiCamera.VideoFeed = util.CreateRingBuffer[[]byte](buffFrameCount)
 
 	return rpiCamera
 }

@@ -11,11 +11,12 @@ import (
 )
 
 const (
-	MAX_CONNECTED_CLIENT = 5
+	MAX_CONNECTED_CLIENT     = 5
+	VIDEO_FRAME_BUFFER_COUNT = 2
 )
 
 var (
-	videoFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](2)
+	videoFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](VIDEO_FRAME_BUFFER_COUNT)
 	audioFrames *util.RingBuffer[[]byte] = util.CreateRingBuffer[[]byte](1)
 
 	conClients uint8       = 0
