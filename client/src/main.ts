@@ -9,10 +9,8 @@ let frameProc: boolean = false
 
 const audio = new Audio('/alarm.mp3');
 const watchdog = new Watchdog(CHECK_VIDEO_MS * 2, () => {
-    console.log("PLAY ALARM")
     audio.play()
 }, () => {
-    console.log("Pause ALARM")
     audio.pause()
 })
 

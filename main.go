@@ -31,7 +31,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("./client/dist")))
 
 	ipAddr := getIpAddr()
-	port := 8080
+	port := 80
 
 	log.Printf("======= Web Server Ready! =======\n")
 	log.Printf("======= %s:%d =======\n", ipAddr, port)
