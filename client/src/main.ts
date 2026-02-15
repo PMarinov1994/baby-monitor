@@ -3,14 +3,11 @@ import { Watchdog } from './watchdog.js';
 import { connectToSender } from './webRTC.js';
 
 const CHECK_VIDEO_MS = 1000
-const ALARM_VOLUME = 1 // from 0.0 to 1.0
 
 let intervalId: number | undefined = undefined
 let frameProc: boolean = false
 
 const audio = new Audio('/alarm.mp3');
-audio.volume = ALARM_VOLUME
-
 const watchdog = new Watchdog(CHECK_VIDEO_MS * 2, () => {
     audio.play()
 }, () => {
