@@ -5,7 +5,6 @@ set -e
 # Default values (false)
 DEPS=false
 UI=false
-NCAM=false
 RUN=false
 
 print_help() {
@@ -14,7 +13,6 @@ print_help() {
   echo "Options:"
   echo "  -deps, --dependencies       Install build dependencies"
   echo "  -ui, --front-end            Build UI front-end"
-  echo "  -ncam, --native-camera-lib  Build C camera library"
   echo "  -r, --run                   Run the program after build"
   echo "  -h, --help                  Show this help message"
 }
@@ -28,10 +26,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -ui|--front-end)
       UI=true
-      shift
-      ;;
-    -ncam|--native-camera-lib)
-      NCAM=true
       shift
       ;;
     -r|--run)
@@ -86,20 +80,6 @@ if $UI; then
 	fi
 
 	npm run build
-	popd
-fi
-
-if $NCAM; then
-	pushd rpicam/native
-
-	mkdir -p _build
-	pushd _build
-
-	cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-	cmake --build .
-	sudo cmake --install .
-
-	popd
 	popd
 fi
 

@@ -1,13 +1,28 @@
-export async function connectToSender(pc: RTCPeerConnection, videoEl: HTMLVideoElement) {
-    console.log('CONNECTING TO SENDER');
+
+export async function connectToSender(videoEl: HTMLVideoElement) {
+    const iceServerReq = await fetch(`http://${window.location.hostname}:8080/cam/whep`, {
+        method: 'OPTIONS',
+        headers: {
+        },
+    })
+
+    const link = iceServerReq.headers.get('Link')
+    const iceServers = linkToIceServers(link!)
+
+    const pc = new RTCPeerConnection({
+        iceServers,
+    })
 
     pc.ontrack = event => {
-        // console.log(event.streams)
-        // videoEl.srcObject = event.streams[0];
-        console.log('Received track:', event);
         if (videoEl.srcObject !== event.streams[0]) {
             videoEl.srcObject = event.streams[0]
         }
+    }
+
+    const queueCandidate: RTCIceCandidate[] = []
+    pc.onicecandidate = event => {
+        if (event.candidate !== null)
+            queueCandidate.push(event.candidate)
     }
 
     const audioTRansceiver = pc.addTransceiver('audio', { direction: 'recvonly' })
@@ -15,17 +30,6 @@ export async function connectToSender(pc: RTCPeerConnection, videoEl: HTMLVideoE
 
     const videoTransceiver = pc.addTransceiver('video', { direction: 'recvonly' })
     videoTransceiver.receiver.jitterBufferTarget = 1
-
-    const videoCapabilities = RTCRtpReceiver.getCapabilities("video")
-    if (videoCapabilities === null) {
-        alert("pc.localDescription is null")
-        return
-    }
-
-    const codecs = videoCapabilities.codecs;
-    const preferred = codecs.filter(c => c.mimeType === "video/H264")
-
-    videoTransceiver.setCodecPreferences(preferred);
 
     try {
         const offer = await pc.createOffer()
@@ -36,38 +40,40 @@ export async function connectToSender(pc: RTCPeerConnection, videoEl: HTMLVideoE
             return
         }
 
-        console.log("Sending request");
-        const response = await fetch('/webRTCFeed', {
+        const response = await fetch(`http://${window.location.hostname}:8080/cam/whep`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/sdp'
             },
-            body: JSON.stringify({
-                sdp: pc.localDescription.sdp,
-                type: 'offer',
-            })
+            body: offer.sdp
         });
 
         if (!response.ok) {
             throw new Error('Failed to send offer');
         }
 
-        console.log("Waiting response...");
-        const answer = await response.json();
+        const answer = await response.text();
 
-        console.log("setRemoteDescription");
-        // await pc.setRemoteDescription(new RTCSessionDescription(answer))
         await pc.setRemoteDescription(new RTCSessionDescription(
             {
                 type: 'answer',
-                sdp: answer.sdp
+                sdp: answer,
             }));
-
-        for (const candidate of answer.candidates)
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
 
     } catch (e) {
         alert(e)
     }
+}
 
+
+function linkToIceServers(links: string) {
+    return (links !== null) ? links.split(', ').map((link) => {
+        const m = link.match(/^<(.+?)>; rel="ice-server"(; username="(.*?)"; credential="(.*?)"; credential-type="password")?/i);
+
+        const ret = {
+            urls: [m![1]],
+        };
+
+        return ret;
+    }) : [];
 }

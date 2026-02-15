@@ -13,27 +13,16 @@
 	<button id="soundSettingsOpenBtn">≡</button>
 	<div id="soundSettings" class="soundSettingsStyle">
 		<div class="soundSettings-content">
-			<select name="Sound Card" id="soundCards"> </select>
-			<select name="Outputs" id="outputs"> </select>
-			<input type="range" min="0" max="0" value="0" class="slider" id="volume">
 			<div class="divToggle">
 				<input type="checkbox" id="toggleNightVision">
 				<label for="toggleNightVision"> Toggle Night Vision </label>
-			</div>
-			<div class="divToggle">
-				<input type="checkbox" id="toggleSoundWaveDraw">
-				<label for="toggleSoundWaveDraw"> Toggle Sound Wave Draw </label>
-			</div>
-			<div class="divToggle">
-				<button id="rotateLeft" class="rotateButton">-180°</button>
-				<button id="rotateRight" class="rotateButton">+180°</button>
 			</div>
 		</div>
 		<div>
 		</div>
 	</div>
 	<div class="video-container" id="videoContainer">
-		<video id="remoteVideo" autoplay playsinline muted controls></video>
+		<video id="remoteVideo" controls></video>
 	</div>
 	<script type="module" src="/src/main.ts"></script>
 </body>

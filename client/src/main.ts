@@ -1,7 +1,41 @@
-import { connectToSender } from "./webRTC";
 import { wsConnect } from "./webSocket";
+import { Watchdog } from './watchdog.js';
+import { connectToSender } from './webRTC.js';
+
+const CHECK_VIDEO_MS = 1000
+
+let intervalId: number | undefined = undefined
+let frameProc: boolean = false
+
+const audio = new Audio('/alarm.mp3');
+const watchdog = new Watchdog(CHECK_VIDEO_MS * 2, () => {
+    console.log("PLAY ALARM")
+    audio.play()
+}, () => {
+    console.log("Pause ALARM")
+    audio.pause()
+})
 
 const videoElem = document.getElementById('remoteVideo') as HTMLVideoElement;
+videoElem.addEventListener('play', () => {
+    console.log("Video Play")
+
+    intervalId = setInterval(() => {
+        if (frameProc)
+            watchdog.reset()
+        frameProc = false
+    }, CHECK_VIDEO_MS)
+
+    watchdog.start()
+    videoElem.requestVideoFrameCallback(processFrame)
+});
+
+videoElem.addEventListener('pause', () => {
+    console.log("Video Pause")
+
+    clearInterval(intervalId)
+    watchdog.stop()
+})
 
 const soundSettingsOpenBtn = document.getElementById('soundSettingsOpenBtn') as HTMLButtonElement;
 const soundSettingsDiv = document.getElementById('soundSettings') as HTMLDivElement;
@@ -13,13 +47,16 @@ soundSettingsOpenBtn.addEventListener('click', () => {
         soundSettingsDiv.style.height = "100%"
 });
 
-window.addEventListener('DOMContentLoaded', () => {
-    const pc = new RTCPeerConnection({})
-    const dc = pc.createDataChannel("exchange_id")
+function processFrame() {
+    frameProc = true
 
-    connectToSender(pc, videoElem).then(() => {
-        console.log("Successfull connection to webRTC.")
-        console.log("Connecting to WebSocket.")
-        wsConnect(pc, dc);
-    });
-});
+    // Continue loop if video is playing
+    videoElem.requestVideoFrameCallback(processFrame)
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    connectToSender(videoElem).then(() => {
+        console.log("WebRTC Connected!")
+        wsConnect();
+    })
+})

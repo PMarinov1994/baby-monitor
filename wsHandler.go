@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/pion/webrtc/v4"
-	"githug.com/pmarinov1994/baby-monitor/mic"
 	"githug.com/pmarinov1994/baby-monitor/util"
 )
 
@@ -22,33 +21,16 @@ type WsClient struct {
 }
 
 type WsClientState struct {
-	SoundCards  []*mic.SoundCard `json:"soundCards"`
-	NightVision bool             `json:"nightVision"`
-	DrawSound   bool             `json:"drawSound"`
+	NightVision bool `json:"nightVision"`
+	DrawSound   bool `json:"drawSound"`
 }
 
 const (
 	DATA_SEPARATOR = "&&&"
 
 	// Client -> Server
-	REQ_SOUND_CARDS = "getSoundCards"
-	RES_SOUND_CARDS = "gotSoundCards"
-
-	// Client -> Server
-	REQ_CHANGE_SOUND = "setSound"
-	RES_CHANGE_SOUND = "gotSound"
-
-	// Client -> Server
-	REQ_WS_ID = "getWsId"
-	RES_WS_ID = "setWsId"
-
-	// Client -> Server
 	REQ_TOGGLE_NIGHT_VISION = "setToggleNightVision"
 	RES_TOGGLE_NIGHT_VISION = "gotToggleNightVision"
-
-	// Client -> Server
-	REQ_TOGGLE_SOUND_DRAW = "setToggleSoundDraw"
-	RES_TOGGLE_SOUND_DRAW = "gotToggleSoundDraw"
 
 	// Server -> Client
 	REQ_UPDATE_STATE = "setUpdateState"
@@ -57,10 +39,6 @@ const (
 	// Client -> Server
 	REQ_GET_STATE = "getGetState"
 	RES_GET_STATE = "gotGetState"
-
-	// Client -> Server
-	REQ_SET_ROTATE = "getSetRotate"
-	RES_SET_ROTATE = "gotSetRotate"
 )
 
 func wsApiHandle(writer http.ResponseWriter, request *http.Request) {
@@ -155,29 +133,9 @@ func handleWsClient(client WsClient) {
 
 		updateNeeded := false
 		switch string(chunks[0]) {
-		case REQ_SOUND_CARDS:
-			processGetSoundCardsReq(client.ws)
-
-		case REQ_CHANGE_SOUND:
-			processVolumeChangeReq(chunks, client.ws)
-			updateNeeded = true
-
-		case REQ_WS_ID:
-			processWsIdReq(client.id, client.ws)
-
 		case REQ_TOGGLE_NIGHT_VISION:
 			processToggleNightVisionReq(chunks)
 			updateNeeded = true
-
-		case REQ_TOGGLE_SOUND_DRAW:
-			processToggleSoundDraw(chunks)
-			updateNeeded = true
-
-		case REQ_GET_STATE:
-			sendStateToClient(client.ws)
-
-		case REQ_SET_ROTATE:
-			processSetRotate(chunks, client.ws)
 		}
 
 		if updateNeeded {
@@ -188,107 +146,6 @@ func handleWsClient(client WsClient) {
 			}
 		}
 	}
-}
-
-func createSoundCardsRequest() []byte {
-	jsonData, err := json.Marshal(soundCards)
-	if err != nil {
-		util.CheckError(&err)
-	}
-
-	resHeaderLen := len(RES_SOUND_CARDS)
-	resSeparatorLen := len(DATA_SEPARATOR)
-
-	response := make([]byte, resHeaderLen+resSeparatorLen+len(jsonData))
-
-	copy(response, []byte(RES_SOUND_CARDS))
-	copy(response[resHeaderLen:], []byte(DATA_SEPARATOR))
-	copy(response[resHeaderLen+resSeparatorLen:], jsonData)
-
-	return response
-}
-
-func processGetSoundCardsReq(ws *websocket.Conn) {
-	response := createSoundCardsRequest()
-	if err := ws.WriteMessage(websocket.TextMessage, response); err != nil {
-		util.CheckError(&err)
-	}
-}
-
-func processVolumeChangeReq(chunks []string, ws *websocket.Conn) {
-	if len(chunks) < 4 {
-		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
-			"%s%sError: invalid request for '%s'. Not enough data chunks",
-			RES_CHANGE_SOUND,
-			DATA_SEPARATOR,
-			REQ_CHANGE_SOUND,
-		))
-		return
-	}
-
-	var outputCh *mic.OutputChannel
-
-	soundCardName := chunks[1]
-	outputChName := chunks[2]
-	newValueStr := chunks[3]
-
-	for _, sd := range soundCards {
-		if sd.LongName == soundCardName {
-			for _, ch := range sd.OutputChannels {
-				if ch.Name == outputChName {
-					outputCh = ch
-					break
-				}
-			}
-		}
-	}
-
-	if outputCh == nil {
-		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
-			"%s%sError: invalid request for '%s'. Channel (%s) from %s not found",
-			RES_CHANGE_SOUND,
-			DATA_SEPARATOR,
-			REQ_CHANGE_SOUND,
-			outputChName,
-			soundCardName,
-		))
-		return
-	}
-
-	newValue, err := strconv.Atoi(newValueStr)
-	if err != nil {
-		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
-			"%s%sError: invalid request for '%s'. New value (%s) not an integer",
-			RES_CHANGE_SOUND,
-			DATA_SEPARATOR,
-			REQ_CHANGE_SOUND,
-			newValueStr,
-		))
-		return
-	}
-
-	res, err := outputCh.SetVolume(newValue)
-	if err != nil {
-		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
-			"%s%sError: Failed to set volume. Reason %v",
-			RES_CHANGE_SOUND,
-			DATA_SEPARATOR,
-			err,
-		))
-	}
-
-	log.Printf("Change volume result: %t\n", res)
-}
-
-func processWsIdReq(id uuid.UUID, ws *websocket.Conn) {
-	ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
-		"%s%s%s",
-		RES_WS_ID,
-		DATA_SEPARATOR,
-		id.String(),
-	))
-
-	log.Printf("Sending WsClient ID: %s\n", id.String())
 }
 
 func processToggleNightVisionReq(chunks []string) {
@@ -303,22 +160,8 @@ func processToggleNightVisionReq(chunks []string) {
 	log.Printf("Setting night vision: %s\n", toggle)
 }
 
-func processToggleSoundDraw(chunks []string) {
-	toggle := chunks[1]
-
-	b, err := strconv.ParseBool(toggle)
-	if err != nil {
-		util.CheckError(&err)
-	}
-
-	enableSoundDraw = b
-	log.Printf("Setting sound draw: %s\n", toggle)
-}
-
 func sendStateToClient(ws *websocket.Conn) {
 	content := WsClientState{
-		SoundCards:  soundCards,
-		DrawSound:   enableSoundDraw,
 		NightVision: isNightVisionOn,
 	}
 
@@ -339,27 +182,4 @@ func sendStateToClient(ws *websocket.Conn) {
 	if err := ws.WriteMessage(websocket.TextMessage, request); err != nil {
 		util.CheckError(&err)
 	}
-}
-
-func processSetRotate(chunks []string, ws *websocket.Conn) {
-	if len(chunks) != 2 &&
-		chunks[1] != "-90" && chunks[1] != "90" &&
-		chunks[1] != "-180" && chunks[1] != "180" {
-		ws.WriteMessage(websocket.TextMessage, fmt.Appendf(nil,
-			"%s%sError: Invalid parameters",
-			RES_SET_ROTATE,
-			DATA_SEPARATOR,
-		))
-	}
-
-	r, _ := strconv.Atoi(chunks[1]) // We checked the string above
-
-	newRotation := int(vidFrameRotation)
-	newRotation += r
-
-	if newRotation > 270 || newRotation < 0 || newRotation%90 != 0 {
-		newRotation = 0
-	}
-
-	vidFrameRotation = Rotation(newRotation)
 }
